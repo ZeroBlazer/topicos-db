@@ -4,6 +4,15 @@ use std::fs::File;
 use std::io::Read;
 use serde_json::{Value, Error};
 
+fn read_db(path: &str) -> Value{
+    let mut file = File::open(path).unwrap();
+    let mut data = String::new();
+    file.read_to_string(&mut data).unwrap();
+
+    let v: Value = serde_json::from_str(&data).unwrap();
+    v
+}
+
 fn manhattan_dist(x: &Vec<f32>, y: &Vec<f32>) -> f32 {
     if x.len() != y.len() {
         panic!("Should compare vectors of same size");
@@ -86,28 +95,25 @@ fn pearson_coef(x: &Vec<f32>, y: &Vec<f32>) -> f32 {
     ((sqr_diff_x - avg_sqr_x).sqrt() * (sqr_diff_y - avg_sqr_y).sqrt())
 }
 
-// fn distance(a: &str, b: &str, func: fn(&Vec<f32>, &Vec<f32>) -> f32) -> f32 {
-//     let mut file = File::open("text.json").unwrap();
-//     let mut data = String::new();
-//     file.read_to_string(&mut data).unwrap();
-
-//     let v: Value = serde_json::from_str(&data)?;
-
-// }
-
-fn distance() {
-    let mut file = File::open("data/db.json").unwrap();
-    let mut data = String::new();
-    file.read_to_string(&mut data).unwrap();
-
-    let v: Value = serde_json::from_str(&data).unwrap();
-    println!("Data: {}", v["califications"][0]["scores"]);
+fn distance(db: &Value, a: &str, b: &str, func: fn(&Vec<f32>, &Vec<f32>) -> f32) -> f32 {
+    // let vec_a: Vec<f32>;
+    // let vec_b: Vec<f32>;
+    // for cal in db["califications"] {
+    //     if cal["name"] == a {
+    //         vec_a = cal["scores"];
+    //     } 
+    // }
+    // println!("vec: {}", vec_a);
+    
+    // println!("{}", manhattan_dist(&vec_a, &vec_b));
+    2.0
 }
 
 // fn prediction(k: u32, fun: fn(&Vec<f32>, &Vec<f32>) -> f32, user: str, band: str) -> f32 {}
 
 fn main() {
-    distance();
+    let db = read_db("data/db.json");
+    println!("Distance = {}", distance(&db, "Angelica", "Bill", manhattan_dist));
     // let users = vec!["Angelica", "Bill", "Chan", "Dan", "Harley", "Jordyn", "Sam", "Veronica"];
     // let bands = vec!["Bues", "Brown", "Dead", "Nora", "Phoenix", "Slightly", "Strokes", "Vampire"];
 
