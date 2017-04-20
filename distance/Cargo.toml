@@ -1,0 +1,7 @@
+[package]
+name = "distance"
+version = "0.1.0"
+authors = ["Elías Puma <elpumitaelias@gmail.com>"]
+
+[dependencies]
+serde_json = "0.9"
