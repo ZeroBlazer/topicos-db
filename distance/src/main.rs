@@ -90,10 +90,10 @@ fn pearson_coef(x: &Vec<f32>, y: &Vec<f32>) -> f32 {
 }
 
 fn get_vector(db: &Value, name: &str) -> Vec<f32> {
-    let vec: Vec<f32> = vec![1.0];
-    let array = db["scores"][name].as_array().unwrap();
-    for elem in array.iter() {
-        println!("{} ", elem);
+    let mut vec: Vec<f32> = vec![];
+
+    for elem in db["scores"][name].as_array().unwrap().iter() {
+        vec.push(elem.as_f64().unwrap() as f32);
     }
     // let mut i = 0;
     // while db["scores"][name][i] != json!(null) {
