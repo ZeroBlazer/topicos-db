@@ -1,5 +1,7 @@
 extern crate serde_json;
 
+use std::fs::File;
+use std::io::Read;
 use serde_json::{Value, Error};
 
 fn manhattan_dist(x: &Vec<f32>, y: &Vec<f32>) -> f32 {
@@ -84,27 +86,42 @@ fn pearson_coef(x: &Vec<f32>, y: &Vec<f32>) -> f32 {
     ((sqr_diff_x - avg_sqr_x).sqrt() * (sqr_diff_y - avg_sqr_y).sqrt())
 }
 
-fn distance(a: &str, b: &str, func: fn(&Vec<f32>, &Vec<f32>) -> f32) -> f32 {
-    let v: Value = serde_json::
+// fn distance(a: &str, b: &str, func: fn(&Vec<f32>, &Vec<f32>) -> f32) -> f32 {
+//     let mut file = File::open("text.json").unwrap();
+//     let mut data = String::new();
+//     file.read_to_string(&mut data).unwrap();
+
+//     let v: Value = serde_json::from_str(&data)?;
+
+// }
+
+fn distance() {
+    let mut file = File::open("data/db.json").unwrap();
+    let mut data = String::new();
+    file.read_to_string(&mut data).unwrap();
+
+    let v: Value = serde_json::from_str(&data).unwrap();
+    println!("Data: {}", v["califications"][0]["scores"]);
 }
 
 // fn prediction(k: u32, fun: fn(&Vec<f32>, &Vec<f32>) -> f32, user: str, band: str) -> f32 {}
 
 fn main() {
-    let users = vec!["Angelica", "Bill", "Chan", "Dan", "Harley", "Jordyn", "Sam", "Veronica"];
-    let bands = vec!["Bues", "Brown", "Dead", "Nora", "Phoenix", "Slightly", "Strokes", "Vampire"];
+    distance();
+    // let users = vec!["Angelica", "Bill", "Chan", "Dan", "Harley", "Jordyn", "Sam", "Veronica"];
+    // let bands = vec!["Bues", "Brown", "Dead", "Nora", "Phoenix", "Slightly", "Strokes", "Vampire"];
 
-    let angelica: Vec<f32> = vec![3.5, 2., 0., 4.5, 5., 1.5, 2.5, 2.];
-    let bill: Vec<f32> = vec![2., 3.5, 4., 0., 2., 3.5, 0., 3.];
-    let chan: Vec<f32> = vec![5., 1., 1., 3., 5., 1., 0., 0.];
-    let dan: Vec<f32> = vec![3., 4., 4.5, 0., 3., 4.5, 4., 2.];
-    let harley: Vec<f32> = vec![0., 4., 1., 4., 0., 0., 4., 1.];
-    let jordyn: Vec<f32> = vec![0., 4.5, 4., 5., 5., 4.5, 4., 4.];
-    let sam: Vec<f32> = vec![5., 2., 0., 3., 5., 4., 5., 0.];
-    let veronica: Vec<f32> = vec![3., 0., 0., 5., 4., 2.5, 3., 0.];
+    // let angelica: Vec<f32> = vec![3.5, 2., 0., 4.5, 5., 1.5, 2.5, 2.];
+    // let bill: Vec<f32> = vec![2., 3.5, 4., 0., 2., 3.5, 0., 3.];
+    // let chan: Vec<f32> = vec![5., 1., 1., 3., 5., 1., 0., 0.];
+    // let dan: Vec<f32> = vec![3., 4., 4.5, 0., 3., 4.5, 4., 2.];
+    // let harley: Vec<f32> = vec![0., 4., 1., 4., 0., 0., 4., 1.];
+    // let jordyn: Vec<f32> = vec![0., 4.5, 4., 5., 5., 4.5, 4., 4.];
+    // let sam: Vec<f32> = vec![5., 2., 0., 3., 5., 4., 5., 0.];
+    // let veronica: Vec<f32> = vec![3., 0., 0., 5., 4., 2.5, 3., 0.];
 
-    let clara: Vec<f32> = vec![4.75, 4.5, 5., 4.25, 4.];
-    let roberts: Vec<f32> = vec![4., 3., 5., 2., 1.];
+    // let clara: Vec<f32> = vec![4.75, 4.5, 5., 4.25, 4.];
+    // let roberts: Vec<f32> = vec![4., 3., 5., 2., 1.];
 
     // println!("{}", manhattan_dist(&angelica, &bill));
     // println!("{}", euclidian_dist(&angelica, &bill));
