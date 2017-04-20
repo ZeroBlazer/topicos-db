@@ -4,7 +4,6 @@ use std::fs::File;
 use std::io::Read;
 use serde_json::Value;
 // use serde_json::{Value, Error};
-use std::collections::BTreeMap;
 
 fn read_db(path: &str) -> Value {
     let mut file = File::open(path).unwrap();
