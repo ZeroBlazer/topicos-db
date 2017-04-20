@@ -77,17 +77,28 @@
             5.0,
             4.0,
             2.5,
-            3.0
+            3.0,
+            0.0
         ]
     },
     "genres": [
         "Bues",
         "Brown",
         "Dead",
-        "Nora",
+        "Norah",
         "Phoenix",
         "Slightly",
         "Strokes",
         "Vampire"
+    ],
+    "names": [
+        "Angelica",
+        "Bill",
+        "Chan",
+        "Dan",
+        "Harley",
+        "Jordyn",
+        "Sam",
+        "Veronica"
     ]
 }
