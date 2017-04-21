@@ -57,11 +57,11 @@ fn evaluate_book_ratings() {
         if i > 10 {
             break;
         }
-        let (s1, s2, dist): (u32, String, u32) = record.unwrap();
-        println!("{}: {}: [{}]", s1, s2, dist);
+        let user: User = record.unwrap();
+        println!("{}: {} [{}]", user.id, user.location, user.age);
+        // let (s1, s2, dist): (u32, String, u32) = record.unwrap();
+        // println!("{}: {}: [{}]", s1, s2, dist);
         i += 1;
-        // let user: User = record.unwrap();
-        // println!("{}: {}, {}", user.id, user.location, user.age);
     }
 }
 
