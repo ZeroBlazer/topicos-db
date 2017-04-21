@@ -13,7 +13,7 @@ pub fn manhattan_dist(x: &Vec<f32>, y: &Vec<f32>) -> f32 {
     distance
 }
 
-fn euclidian_dist(x: &Vec<f32>, y: &Vec<f32>) -> f32 {
+pub fn euclidian_dist(x: &Vec<f32>, y: &Vec<f32>) -> f32 {
     if x.len() != y.len() {
         panic!("Should compare vectors of same size");
     }
@@ -26,7 +26,7 @@ fn euclidian_dist(x: &Vec<f32>, y: &Vec<f32>) -> f32 {
     distance.sqrt()
 }
 
-fn cosine_dist(x: &Vec<f32>, y: &Vec<f32>) -> f32 {
+pub fn cosine_dist(x: &Vec<f32>, y: &Vec<f32>) -> f32 {
     if x.len() != y.len() {
         panic!("Should compare vectors of same size");
     }
@@ -43,7 +43,7 @@ fn cosine_dist(x: &Vec<f32>, y: &Vec<f32>) -> f32 {
     dot / (den_a.sqrt() * den_b.sqrt())
 }
 
-fn pearson_coef(x: &Vec<f32>, y: &Vec<f32>) -> f32 {
+pub fn pearson_coef(x: &Vec<f32>, y: &Vec<f32>) -> f32 {
     if x.len() != y.len() {
         panic!("Should compare vectors of same size");
     }
