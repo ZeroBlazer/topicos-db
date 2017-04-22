@@ -6,6 +6,7 @@ mod distance;
 use std::fs::File;
 use csv::Reader;
 use distance::*;
+use std::collections::HashMap;
 
 #[derive(RustcDecodable)]
 struct User {
@@ -48,24 +49,75 @@ fn init_db(path: &str) -> Reader<File> {
 //     let mut rdr = init_db("./data/Movie_Ratings.csv");
 // }
 
-fn evaluate_book_ratings() {
-    // let mut rdr = init_db("./data/BX-Dump/BX-Book-Ratings.csv");
-    let mut rdr = init_db("./data/BX-Dump/BX-Users.csv").has_headers(false);
+fn load_book_ratings() {
+    /*********************LOAD USERS*********************/
+    // let mut rdr = init_db("./data/BX-Dump/BX-Users.csv").has_headers(false);
+
+    // let mut i = 0;
+    // for record in rdr.decode() {
+    //     if i > 10 {
+    //         break;
+    //     }
+    //     let user: User = record.unwrap();
+    //     println!("{}: {} [{}]", user.id, user.location, user.age);
+
+    //     i += 1;
+    // }
+    /****************************************************/
+
+    let mut rdr = init_db("./data/BX-Dump/BX-Book-Ratings.csv").has_headers(false);
 
     let mut i = 0;
+    let mut ratings: HashMap<u32, HashMap<String, u32>> = HashMap::new();
+
     for record in rdr.decode() {
         if i > 10 {
             break;
         }
-        let user: User = record.unwrap();
-        println!("{}: {} [{}]", user.id, user.location, user.age);
-        // let (s1, s2, dist): (u32, String, u32) = record.unwrap();
-        // println!("{}: {}: [{}]", s1, s2, dist);
         i += 1;
+
+
+        let mut rating: Rating = record.unwrap();
+
+        let mut user_ratings = HashMap::new();
+        user_ratings.insert(rating.book_isbn, rating.rating);
+
+        ratings.insert(rating.user_id, user_ratings);
+    }
+
+    i = 0;
+
+    for record in rdr.decode() {
+        if i > 10 {
+            break;
+        }
+        i += 1;
+
+        let mut rating: Rating = record.unwrap();
+
+        print!("{}: ", rating.user_id);
+
+        let isbn = String::from("0100000X");
+        let rate = 7;
+
+        match ratings.get_mut(&rating.user_id) {
+            Some(mut usr_rtngs) => {
+                // let variable: () = usr_rtngs;
+                &usr_rtngs.insert(isbn, rate);
+                for (book_name, &rating_num) in usr_rtngs.iter() {
+                    println!("{} -> {}", book_name, rating_num);
+                }
+                // usr_rtngs.insert(String::from("AAAAAAA"), 9);
+                // println!("Found");
+            }
+            None => {
+                println!("Not found");
+            }
+        }
     }
 }
 
 fn main() {
-    evaluate_book_ratings();
+    load_book_ratings();
     println!("Hello, world!");
 }
