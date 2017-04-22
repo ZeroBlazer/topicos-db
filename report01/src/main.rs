@@ -32,25 +32,63 @@ struct Rating {
     rating: u32,
 }
 
-fn init_db(path: &str) -> Reader<File> {
-    let mut rdr = csv::Reader::from_file(path).unwrap();
+
+
+fn distance(db: &HashMap<u32, HashMap<String, u32>>, a: u32, b: u32, func: fn(&Vec<f32>, &Vec<f32>) -> f32) -> f32 {
+    // let a_ratings = db.get_mut(&a);
+    // let b_ratings = db.get_mut(&b);
+
+    // let mut vec_a = Vec::new();
+    // let mut vec_b = Vec::new();
+
+    // for (isbn_a, &rating_a) in a_ratings.iter() {
+    //     if let Some(val_b) = vec_b.get_mut(isbn_a) {
+    //         vec_a.push(rating_a as f32);
+    //         vec_b.push(rating_a as f32);
+    //     } else {
+    //         vec_a.push(rating_a as f32);
+    //         vec_b.push(0.0);
+    //     }
+    // }
+
+    // for (&isbn_b, &rating_b) in b_ratings.iter() {
+    //     match vec_a.get(isbn_b) {
+    //         Some(val_b) => {}
+    //         None => {
+    //             vec_b.push(rating_b as f32);
+    //             vec_a.push(0.0);
+    //         }
+    //     }
+    // }
+
+    func(&vec_a, &vec_b)
+}
+
+fn init_db_reader(path: &str) -> Reader<File> {
+    let rdr = csv::Reader::from_file(path).unwrap();
     rdr
 }
 
-// fn get_vector(db: &Value, name: &str) -> Vec<f32> {
-//     let mut vec: Vec<f32> = vec![];
-//     for elem in db["scores"][name].as_array().unwrap().iter() {
-//         vec.push(elem.as_f64().unwrap() as f32);
-//     }
-
-//     vec
-// }
-
-// fn evaluate_movie_ratings() {
-//     let mut rdr = init_db("./data/Movie_Ratings.csv");
-// }
-
 fn load_book_ratings() {
+    /*********************LOAD RATINGS*********************/
+    let mut rdr = init_db_reader("./data/BX-Dump/BX-Book-Ratings.csv").has_headers(false);
+    let mut ratings: HashMap<u32, HashMap<String, u32>> = HashMap::new();
+
+    for record in rdr.decode() {
+        let rating: Rating = record.unwrap();
+
+        match ratings.entry(rating.user_id) {
+            Vacant(entry) => {
+                let mut user_ratings = HashMap::new();
+                user_ratings.insert(rating.book_isbn, rating.rating);
+                entry.insert(user_ratings);
+            }
+            Occupied(entry) => {
+                entry.into_mut().insert(rating.book_isbn, rating.rating);
+            }
+        }
+    }
+
     /*********************LOAD USERS*********************/
     // let mut rdr = init_db("./data/BX-Dump/BX-Users.csv").has_headers(false);
 
@@ -65,24 +103,6 @@ fn load_book_ratings() {
     //     i += 1;
     // }
     /****************************************************/
-
-    let mut rdr = init_db("./data/BX-Dump/BX-Book-Ratings.csv").has_headers(false);
-    let mut ratings: HashMap<u32, HashMap<String, u32>> = HashMap::new();
-
-    for record in rdr.decode() {
-        let mut rating: Rating = record.unwrap();
-
-        match ratings.entry(rating.user_id) {
-            Vacant(entry) => {
-                let mut user_ratings = HashMap::new();
-                user_ratings.insert(rating.book_isbn, rating.rating);
-                entry.insert(user_ratings);
-            }
-            Occupied(entry) => {
-                entry.into_mut().insert(rating.book_isbn, rating.rating);
-            }
-        }
-    }
 }
 
 fn main() {
