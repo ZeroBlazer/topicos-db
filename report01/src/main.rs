@@ -7,6 +7,7 @@ use std::fs::File;
 use csv::Reader;
 use distance::*;
 use std::collections::HashMap;
+use std::collections::hash_map::Entry::{Occupied, Vacant};
 
 #[derive(RustcDecodable)]
 struct User {
@@ -66,61 +67,19 @@ fn load_book_ratings() {
     /****************************************************/
 
     let mut rdr = init_db("./data/BX-Dump/BX-Book-Ratings.csv").has_headers(false);
-
-    let mut i = 0;
     let mut ratings: HashMap<u32, HashMap<String, u32>> = HashMap::new();
 
     for record in rdr.decode() {
-        if i > 100 {
-            break;
-        }
-        i += 1;
-
-        let mut rating: Rating = record.unwrap();
-        let mut found = false;
-        let mut new_user_ratings = HashMap::new();
-
-        match ratings.get_mut(&rating.user_id) {
-            Some(mut usr_rtngs) => {
-                &usr_rtngs.insert(rating.book_isbn, rating.rating);
-                found = true;
-            }
-            None => {
-                new_user_ratings.insert(rating.book_isbn, rating.rating);
-            }
-        }
-        if !found {
-            ratings.insert(rating.user_id, new_user_ratings);
-        }
-    }
-
-    i = 0;
-
-    for record in rdr.decode() {
-        if i > 100 {
-            break;
-        }
-        i += 1;
-
         let mut rating: Rating = record.unwrap();
 
-        print!("{}: ", rating.user_id);
-
-        // let isbn = String::from("0100000X");
-        // let rate = 7;
-
-        match ratings.get_mut(&rating.user_id) {
-            Some(mut usr_rtngs) => {
-                // let variable: () = usr_rtngs;
-                // &usr_rtngs.insert(isbn, rate);
-                for (book_name, &rating_num) in usr_rtngs.iter() {
-                    println!("{} -> {}", book_name, rating_num);
-                }
-                // usr_rtngs.insert(String::from("AAAAAAA"), 9);
-                // println!("Found");
+        match ratings.entry(rating.user_id) {
+            Vacant(entry) => {
+                let mut user_ratings = HashMap::new();
+                user_ratings.insert(rating.book_isbn, rating.rating);
+                entry.insert(user_ratings);
             }
-            None => {
-                println!("Not found");
+            Occupied(entry) => {
+                entry.into_mut().insert(rating.book_isbn, rating.rating);
             }
         }
     }
