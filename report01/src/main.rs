@@ -71,24 +71,33 @@ fn load_book_ratings() {
     let mut ratings: HashMap<u32, HashMap<String, u32>> = HashMap::new();
 
     for record in rdr.decode() {
-        if i > 10 {
+        if i > 100 {
             break;
         }
         i += 1;
 
-
         let mut rating: Rating = record.unwrap();
+        let mut found = false;
+        let mut new_user_ratings = HashMap::new();
 
-        let mut user_ratings = HashMap::new();
-        user_ratings.insert(rating.book_isbn, rating.rating);
-
-        ratings.insert(rating.user_id, user_ratings);
+        match ratings.get_mut(&rating.user_id) {
+            Some(mut usr_rtngs) => {
+                &usr_rtngs.insert(rating.book_isbn, rating.rating);
+                found = true;
+            }
+            None => {
+                new_user_ratings.insert(rating.book_isbn, rating.rating);
+            }
+        }
+        if !found {
+            ratings.insert(rating.user_id, new_user_ratings);
+        }
     }
 
     i = 0;
 
     for record in rdr.decode() {
-        if i > 10 {
+        if i > 100 {
             break;
         }
         i += 1;
@@ -97,13 +106,13 @@ fn load_book_ratings() {
 
         print!("{}: ", rating.user_id);
 
-        let isbn = String::from("0100000X");
-        let rate = 7;
+        // let isbn = String::from("0100000X");
+        // let rate = 7;
 
         match ratings.get_mut(&rating.user_id) {
             Some(mut usr_rtngs) => {
                 // let variable: () = usr_rtngs;
-                &usr_rtngs.insert(isbn, rate);
+                // &usr_rtngs.insert(isbn, rate);
                 for (book_name, &rating_num) in usr_rtngs.iter() {
                     println!("{} -> {}", book_name, rating_num);
                 }
