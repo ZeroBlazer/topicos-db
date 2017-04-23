@@ -1,5 +1,4 @@
 extern crate csv;
-extern crate test;
 extern crate rustc_serialize;
 
 mod distance;
@@ -9,7 +8,6 @@ use csv::Reader;
 use std::collections::HashMap;
 use std::collections::hash_map::Entry::{Occupied, Vacant};
 use distance::{manhattan_dist, pearson_coef, cosine_dist};
-use test::Bencher;
 
 #[derive(RustcDecodable)]
 struct User {
@@ -88,7 +86,7 @@ fn init_db_reader(path: &str) -> Reader<File> {
     rdr
 }
 
-fn load_book_ratings() {
+fn book_ratings_distance() {
     /*********************LOAD RATINGS*********************/
     let mut rdr = init_db_reader("./data/BX-Dump/BX-Book-Ratings.csv").has_headers(false);
     let mut ratings: HashMap<u32, HashMap<String, u32>> = HashMap::new();
@@ -112,7 +110,7 @@ fn load_book_ratings() {
             }
         }
     }
-    
+
     println!("{}", distance(&mut ratings, 11676, 278418, cosine_dist));
     println!("{}", distance(&mut ratings, 11676, 278418, manhattan_dist));
     println!("{}", distance(&mut ratings, 11676, 278418, pearson_coef));
@@ -121,7 +119,87 @@ fn load_book_ratings() {
     /****************************************************/
 }
 
+fn movie_ratings_distance(a: &str, b: &str) {
+    /*********************LOAD RATINGS*********************/
+    let mut rdr = init_db_reader("./data/Movie_Ratings_transposed.csv").has_headers(true);
+
+    let mut vec_a = Vec::new();
+    let mut vec_b = Vec::new();
+    let mut catch_a = false;
+    let mut catch_b = false;
+
+    while !rdr.done() {
+        // skip headers ******************************************
+        loop {
+            match rdr.next_bytes() {
+                csv::NextField::EndOfCsv => break,
+                csv::NextField::EndOfRecord => break,
+                csv::NextField::Error(err) => panic!(err),
+                csv::NextField::Data(_) => {}
+            }
+        }
+
+        // Vector gen ********************************************
+        loop {
+            // User name *****************************************
+            match rdr.next_bytes() {
+                csv::NextField::EndOfCsv => break,
+                csv::NextField::EndOfRecord => break,
+                csv::NextField::Error(err) => panic!(err),
+                csv::NextField::Data(r) => {
+                    let st = String::from_utf8(r.to_vec()).unwrap();
+                    if st == a.to_string() {
+                        catch_a = true;
+                    } else if st == b.to_string() {
+                        catch_b = true;
+                    }
+                }
+            }
+
+            // Ratings *******************************************
+            loop {
+                match rdr.next_bytes() {
+                    csv::NextField::EndOfCsv => break,
+                    csv::NextField::EndOfRecord => break,
+                    csv::NextField::Error(err) => panic!(err),
+                    csv::NextField::Data(r) => {
+                        if catch_a {
+                            vec_a.push(String::from_utf8(r.to_vec())
+                                           .unwrap()
+                                           .parse::<f32>()
+                                           .unwrap());
+                        } else if catch_b {
+                            vec_b.push(String::from_utf8(r.to_vec())
+                                           .unwrap()
+                                           .parse::<f32>()
+                                           .unwrap());
+                        }
+                        // let val = String::from_utf8(r.to_vec()).unwrap();
+                        // let val = String::from_utf8(r.to_vec())
+                        //     .unwrap()
+                        //     .parse::<f32>()
+                        //     .unwrap();
+                        // print!("{} - ", val);
+                    }
+                }
+            }
+            catch_a = false;
+            catch_b = false;
+        }
+
+        // while let Some(r) = rdr.next_bytes().into_iter_result() {
+        //     let st = String::from_utf8(r.unwrap().to_vec()).unwrap();
+        //     print!("{} - ", st);
+        // }
+    }
+
+    println!("Cosine_dist: {}", cosine_dist(&vec_a, &vec_b));
+    println!("Manhattan_dist: {}", manhattan_dist(&vec_a, &vec_b));
+    println!("Pearson_dist: {}", pearson_coef(&vec_a, &vec_b));
+}
+
 fn main() {
-    load_book_ratings();
+    // book_ratings_distance();
+    movie_ratings_distance("Katherine", "Valerie");
     println!("Hello, world!");
 }
