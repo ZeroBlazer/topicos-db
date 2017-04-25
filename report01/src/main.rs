@@ -1,5 +1,6 @@
 extern crate csv;
 extern crate rustc_serialize;
+extern crate time;
 
 mod distance;
 
@@ -7,7 +8,8 @@ use std::fs::File;
 use csv::Reader;
 use std::collections::HashMap;
 use std::collections::hash_map::Entry::{Occupied, Vacant};
-use distance::{manhattan_dist, pearson_coef, cosine_dist};
+use distance::*;
+use time::PreciseTime;
 
 #[derive(RustcDecodable)]
 struct User {
@@ -111,9 +113,22 @@ fn book_ratings_distance() {
         }
     }
 
-    println!("{}", distance(&mut ratings, 11676, 278418, cosine_dist));
-    println!("{}", distance(&mut ratings, 11676, 278418, manhattan_dist));
-    println!("{}", distance(&mut ratings, 11676, 278418, pearson_coef));
+    let mut start = PreciseTime::now();
+    let mut measure = distance(&mut ratings, 11676, 278418, manhattan_dist);
+    let mut end = PreciseTime::now();
+    println!("{} seconds for Manhattan_dist: {}", start.to(end), measure);
+    start = PreciseTime::now();
+    measure = distance(&mut ratings, 11676, 278418, euclidian_dist);
+    end = PreciseTime::now();
+    println!("{} seconds for Euclidian_dist: {}", start.to(end), measure);
+    start = PreciseTime::now();
+    measure = distance(&mut ratings, 11676, 278418, cosine_dist);
+    end = PreciseTime::now();
+    println!("{} seconds for Cosine_dist: {}", start.to(end), measure);
+    start = PreciseTime::now();
+    measure = distance(&mut ratings, 11676, 278418, pearson_coef);
+    end = PreciseTime::now();
+    println!("{} seconds for Pearson_dist: {}", start.to(end), measure);
 
     /*********************LOAD USERS*********************/
     /****************************************************/
@@ -193,13 +208,31 @@ fn movie_ratings_distance(a: &str, b: &str) {
         // }
     }
 
-    println!("Cosine_dist: {}", cosine_dist(&vec_a, &vec_b));
-    println!("Manhattan_dist: {}", manhattan_dist(&vec_a, &vec_b));
-    println!("Pearson_dist: {}", pearson_coef(&vec_a, &vec_b));
+    // println!("Manhattan_dist: {}", manhattan_dist(&vec_a, &vec_b));
+    // println!("Euclidian_dist: {}", euclidian_dist(&vec_a, &vec_b));
+    // println!("Cosine_dist: {}", cosine_dist(&vec_a, &vec_b));
+    // println!("Pearson_dist: {}", pearson_coef(&vec_a, &vec_b));
+
+    let mut start = PreciseTime::now();
+    let mut measure = manhattan_dist(&vec_a, &vec_b);
+    let mut end = PreciseTime::now();
+    println!("{} seconds for Manhattan_dist: {}", start.to(end), measure);
+    start = PreciseTime::now();
+    measure = euclidian_dist(&vec_a, &vec_b);
+    end = PreciseTime::now();
+    println!("{} seconds for Euclidian_dist: {}", start.to(end), measure);
+    start = PreciseTime::now();
+    measure = cosine_dist(&vec_a, &vec_b);
+    end = PreciseTime::now();
+    println!("{} seconds for Cosine_dist: {}", start.to(end), measure);
+    start = PreciseTime::now();
+    measure = pearson_coef(&vec_a, &vec_b);
+    end = PreciseTime::now();
+    println!("{} seconds for Pearson_dist: {}", start.to(end), measure);
 }
 
 fn main() {
     // book_ratings_distance();
-    movie_ratings_distance("Katherine", "Valerie");
+    movie_ratings_distance("Katherine", "Erin");
     println!("Hello, world!");
 }
