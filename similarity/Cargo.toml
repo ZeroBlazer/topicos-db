@@ -4,3 +4,5 @@ version = "0.1.0"
 authors = ["Elías Puma <elpumitaelias@gmail.com>"]
 
 [dependencies]
+rustc-serialize = "0.3.24"
+csv = "0.14"
