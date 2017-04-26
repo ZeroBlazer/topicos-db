@@ -1,38 +1,45 @@
 extern crate csv;
 extern crate rustc_serialize;
 
-// use csv;
 use std::collections::HashMap;
 
-// fn adjusted_cosine(vec_feat_1: Vec<f32>, vec_feat_2: Vec<f32>) -> f32 {
-//     if vec_feat_1.len() != vec_feat_2.len() {
-//         panic!("Should compare vectors of same size");
-//     }
+fn adjusted_cosine(vec_feat_1: Vec<f32>, vec_feat_2: Vec<f32>, vec_avg: Vec<f32>) -> f32 {
+    if vec_feat_1.len() != vec_feat_2.len() {
+        panic!("Should compare vectors of same size");
+    }
 
-//     let n_users = vec_feat_1.len();
+    let n_users = vec_feat_1.len();
 
-//     let mut usr_pref = 0.0;
-//     let mut feat_1_sqr = 0.0;
-//     let mut feat_2_sqr = 0.0;
+    let mut usr_pref = 0.0;
+    let mut feat_1_sqr = 0.0;
+    let mut feat_2_sqr = 0.0;
 
-//     for i in 0..n_users {
-//         if vec_feat_1[i] > 0.0 && vec_feat_2[i] > 0.0 {
-//             let name = db["names"].as_array().unwrap()[i as usize]
-//                 .as_str()
-//                 .unwrap();
-//             let avg = db["scores"][name].as_array().unwrap()[0]
-//                 .as_f64()
-//                 .unwrap() as f32;
-//             let feat_1_inf = vec_feat_1[i] - avg;
-//             let feat_2_inf = vec_feat_2[i] - avg;
-//             usr_pref += feat_1_inf * feat_2_inf;
-//             feat_1_sqr += feat_1_inf.powf(2.0);
-//             feat_2_sqr += feat_2_inf.powf(2.0);
-//         }
-//     }
+    for i in 0..n_users {
+        if vec_feat_1[i] > 0.0 && vec_feat_2[i] > 0.0 {
+            let feat_1_inf = vec_feat_1[i] - vec_avg[i];
+            let feat_2_inf = vec_feat_2[i] - vec_avg[i];
+            usr_pref += feat_1_inf * feat_2_inf;
+            feat_1_sqr += feat_1_inf.powf(2.0);
+            feat_2_sqr += feat_2_inf.powf(2.0);
+        }
+    }
 
-//     usr_pref / (feat_1_sqr.sqrt() * feat_2_sqr.sqrt())
-// }
+    usr_pref / (feat_1_sqr.sqrt() * feat_2_sqr.sqrt())
+}
+
+fn get_user_vector(records: &(HashMap<String, u32>, HashMap<String, u32>, Vec<f32>),
+                   name: &str)
+                   -> Vec<f32> {
+    let mut vec = Vec::new();
+    let indx = records.1.get(name).unwrap();
+    let i = records.0.len();
+
+    for x in 0..i {
+        vec.push(records.2[(*indx as usize * i + x) as usize]);
+    }
+
+    vec
+}
 
 fn get_feature_vector(records: &(HashMap<String, u32>, HashMap<String, u32>, Vec<f32>),
                       feat: &str)
@@ -47,6 +54,29 @@ fn get_feature_vector(records: &(HashMap<String, u32>, HashMap<String, u32>, Vec
     }
 
     vec
+}
+
+fn normalize(vect: Vec<f32>) -> Vec<f32> {
+    let mut normd_vec = Vec::with_capacity(vect.len());
+
+    let mut max = vect[0];
+    let mut min = vect[0];
+
+    for rating in vect.iter() {
+        if *rating > max {
+            max = *rating;
+        }
+        if *rating != 0.0 && *rating < min {
+            min = *rating;
+        }
+    }
+
+    for rating in vect.iter() {
+        let norm = (2.0 * (rating - min) - (max - min)) / (max - min);
+        normd_vec.push(norm);
+    }
+
+    normd_vec
 }
 
 fn load_database(path: &str) -> (HashMap<String, u32>, HashMap<String, u32>, Vec<f32>) {
@@ -94,28 +124,29 @@ fn load_database(path: &str) -> (HashMap<String, u32>, HashMap<String, u32>, Vec
         }
     }
 
-    // for y in 0..5 {
-    //     for x in 0..j {
-    //         print!("{}, ", records[(y * j + x) as usize]);
-    //     }
-    //     println!("");
-    // }
     (headers, names, records)
 }
 
-fn item_similarity(feat_1: &str, feat_2: &str) -> f32 {
-    let records = load_database("./data/db1.csv");
-
+fn item_similarity(records: &(HashMap<String, u32>, HashMap<String, u32>, Vec<f32>),
+                   feat_1: &str,
+                   feat_2: &str)
+                   -> f32 {
     let v_feat_1 = get_feature_vector(&records, feat_1);
     let v_feat_2 = get_feature_vector(&records, feat_2);
+    let v_avg = get_feature_vector(&records, "average");
 
-    println!("{:?}", v_feat_1);
-    println!("{:?}", v_feat_2);
+    adjusted_cosine(v_feat_1, v_feat_2, v_avg)
+}
 
+fn prediction(name: &str, feature: &str) -> f32 {
+    let records = load_database("./data/db1.csv");
+
+    println!("{}",
+             item_similarity(&records, "Daft Punk", "Kacey Musgraves"));
+    println!("{:?}", normalize(get_user_vector(&records, "David")));
     3.1416
 }
 
 fn main() {
-    println!("Sim: {}", item_similarity("Kacey Musgraves", "Daft Punk"));
-    println!("Hello, world!");
+    println!("Prediction: {}", prediction("David", "Kacey Musgraves"));
 }
