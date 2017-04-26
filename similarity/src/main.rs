@@ -78,7 +78,7 @@ fn get_user_avg(records: &(HashMap<String, u32>, HashMap<String, u32>, Vec<f32>)
     vec
 }
 
-fn normalize(vect: &Vec<f32>) -> Vec<f32> {
+fn normalize(vect: &Vec<f32>) -> (Vec<f32>, f32, f32) {
     let mut normd_vec = Vec::with_capacity(vect.len());
 
     let mut max = vect[0];
@@ -93,8 +93,6 @@ fn normalize(vect: &Vec<f32>) -> Vec<f32> {
         }
     }
 
-    print!("max: {}, min: {}\n", max, min);
-
     for rating in vect.iter() {
         if *rating > 0.0 {
             let norm = (2.0 * (rating - min) - (max - min)) / (max - min);
@@ -102,7 +100,11 @@ fn normalize(vect: &Vec<f32>) -> Vec<f32> {
         }
     }
 
-    normd_vec
+    (normd_vec, max, min)
+}
+
+fn unnormalize(norm_val: f32, max: f32, min: f32) -> f32 {
+    0.5 * (norm_val + 1.0) * (max - min) + min
 }
 
 fn load_database(path: &str) -> (HashMap<String, u32>, HashMap<String, u32>, Vec<f32>) {
@@ -161,8 +163,6 @@ fn item_similarity(records: &(HashMap<String, u32>, HashMap<String, u32>, Vec<f3
     let v_feat_2 = get_feature_vector(&records, feat_2);
     let v_avg = get_user_avg(&records);
 
-    println!("AVG: {:?}", v_avg);
-
     adjusted_cosine(v_feat_1, v_feat_2, v_avg)
 }
 
@@ -172,21 +172,25 @@ fn prediction(name: &str, feature: &str) -> f32 {
 
     let user_vec = get_user_vector(&records, name);
     let normd_vec = normalize(&user_vec);
-    let mut sim_vec = Vec::new();
+    let mut sim_vec = vec![0.0; normd_vec.0.len()];
 
-    let mut i = 0;
     for (_feat, &_indx) in records.0.iter() {
         if _feat != feature {
-            print!("{} - ", _feat);
-            sim_vec.push(item_similarity(&records, _feat, feature));
+            sim_vec[(_indx - 1) as usize] = item_similarity(&records, _feat, feature);
         }
-        i += 1;
     }
 
-    println!("{:?}", normd_vec);
-    println!("{:?}", sim_vec);
+    let mut num = 0.0;
+    let mut den = 0.0;
+    let inv_i = sim_vec.len();
+    for i in 0..inv_i {
+        num += sim_vec[i] * normd_vec.0[i];
+        den += sim_vec[i].abs();
+    }
 
-    3.1416
+    let norm_pred = num / den;
+    println!("Normalized prediction: {}", norm_pred);
+    unnormalize(norm_pred, normd_vec.1, normd_vec.2)
 }
 
 fn main() {
