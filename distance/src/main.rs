@@ -189,17 +189,17 @@ fn adjusted_cosine(db: &Value, feat_1: u32, feat_2: u32) -> f32 {
 }
 
 fn main() {
-    let db = read_db("data/db.json");
+    // let db = read_db("data/db.json");
     // println!("Distance = {}",
     //          distance(&db, "Angelica", "Bill", cosine_dist));
-    println!("Prediction = {}",
-             prediction(&db, "Dan", 3, 5, manhattan_dist));
-    println!("Prediction = {}",
-             prediction(&db, "Dan", 3, 5, euclidian_dist));
-    println!("Prediction = {}", prediction(&db, "Dan", 3, 5, cosine_dist));
-    println!("Prediction = {}",
-             prediction(&db, "Dan", 3, 5, pearson_coef));
+    // println!("Prediction = {}",
+    //          prediction(&db, "Dan", 3, 5, manhattan_dist));
+    // println!("Prediction = {}",
+    //          prediction(&db, "Dan", 3, 5, euclidian_dist));
+    // println!("Prediction = {}", prediction(&db, "Dan", 3, 5, cosine_dist));
+    // println!("Prediction = {}",
+    //          prediction(&db, "Dan", 3, 5, pearson_coef));
 
-    // let db = read_db("data/db2.json");
-    // println!("S = {}", adjusted_cosine(&db, 1, 4));
+    let db = read_db("data/db2.json");
+    println!("S = {}", adjusted_cosine(&db, 1, 4));
 }

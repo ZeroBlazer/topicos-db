@@ -1,8 +1,7 @@
 extern crate csv;
 extern crate rustc_serialize;
 
-use std::fs::File;
-use csv::Reader;
+// use csv;
 use std::collections::HashMap;
 
 // fn adjusted_cosine(vec_feat_1: Vec<f32>, vec_feat_2: Vec<f32>) -> f32 {
@@ -35,36 +34,51 @@ use std::collections::HashMap;
 //     usr_pref / (feat_1_sqr.sqrt() * feat_2_sqr.sqrt())
 // }
 
-fn load_database(path: &str) {
-    let mut rdr = csv::Reader::from_file(path)
-        .unwrap()
-        .has_headers(true)
-        .double_quote(true);
+fn get_feature_vector(records: &(HashMap<String, u32>, HashMap<String, u32>, Vec<f32>),
+                      feat: &str)
+                      -> Vec<f32> {
+    let mut vec = Vec::new();
+    let indx = records.0.get(feat).unwrap();
+    let i = records.0.len();
+    let j = records.1.len();
+
+    for y in 0..j {
+        vec.push(records.2[(y * i + *indx as usize) as usize]);
+    }
+
+    vec
+}
+
+fn load_database(path: &str) -> (HashMap<String, u32>, HashMap<String, u32>, Vec<f32>) {
+    let mut rdr = csv::Reader::from_file(path).unwrap().has_headers(true);
     let mut headers: HashMap<String, u32> = HashMap::new();
     let mut names: HashMap<String, u32> = HashMap::new();
-    let mut records: Vec<Vec<i32>> = Vec::new();
+    let mut records: Vec<f32> = Vec::new();
 
     let mut i = 0;
     let mut j = 0;
+
     loop {
         match rdr.next_bytes() {
             csv::NextField::Data(data) => {
                 let d_string = String::from_utf8(data.to_vec()).unwrap();
                 match j {
                     0 => {
+                        /***********HEADERS***********/
                         if i > 0 {
-                            println!("{} -> {}", i - 1, d_string);
                             headers.insert(d_string, i - 1);
                         }
                     }
-                    r => {
+                    _ => {
+                        /***********RECORDS***********/
                         match i {
                             0 => {
+                                /***********NAMES***********/
                                 names.insert(d_string, j - 1);
-                                print!("{} -> ", j - 1);
                             }
-                            c => {
-                                print!("{} ", d_string.parse::<f32>().unwrap());
+                            _ => {
+                                /***********VALUES***********/
+                                records.push(d_string.parse::<f32>().unwrap());
                             }
                         }
                     }
@@ -74,16 +88,30 @@ fn load_database(path: &str) {
             csv::NextField::EndOfRecord => {
                 j += 1;
                 i = 0;
-                println!("\\");
             }
             csv::NextField::EndOfCsv => break,
             csv::NextField::Error(err) => panic!(err),
         }
     }
+
+    // for y in 0..5 {
+    //     for x in 0..j {
+    //         print!("{}, ", records[(y * j + x) as usize]);
+    //     }
+    //     println!("");
+    // }
+    (headers, names, records)
 }
 
-fn item_similarity(user: &str, band: &str) -> f32 {
-    load_database("./data/db1.csv");
+fn item_similarity(feat_1: &str, feat_2: &str) -> f32 {
+    let records = load_database("./data/db1.csv");
+
+    let v_feat_1 = get_feature_vector(&records, feat_1);
+    let v_feat_2 = get_feature_vector(&records, feat_2);
+
+    println!("{:?}", v_feat_1);
+    println!("{:?}", v_feat_2);
+
     3.1416
 }
 
