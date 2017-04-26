@@ -4,7 +4,7 @@ extern crate rustc_serialize;
 use std::collections::HashMap;
 
 fn adjusted_cosine(vec_feat_1: Vec<f32>, vec_feat_2: Vec<f32>, vec_avg: Vec<f32>) -> f32 {
-    if vec_feat_1.len() != vec_feat_2.len() {
+    if vec_feat_1.len() != vec_feat_2.len() || vec_feat_1.len() != vec_avg.len() {
         panic!("Should compare vectors of same size");
     }
 
@@ -56,7 +56,29 @@ fn get_feature_vector(records: &(HashMap<String, u32>, HashMap<String, u32>, Vec
     vec
 }
 
-fn normalize(vect: Vec<f32>) -> Vec<f32> {
+fn get_user_avg(records: &(HashMap<String, u32>, HashMap<String, u32>, Vec<f32>)) -> Vec<f32> {
+    let mut vec = Vec::new();
+    let i = records.0.len();
+    let j = records.1.len();
+
+    for y in 0..j {
+        let mut rated = 0;
+        let mut avg = 0.0;
+        for x in 0..i {
+            let rating = records.2[(y * i + x) as usize];
+            if rating != 0.0 {
+                avg += rating;
+                rated += 1;
+            }
+        }
+        avg /= rated as f32;
+        vec.push(avg);
+    }
+
+    vec
+}
+
+fn normalize(vect: &Vec<f32>) -> Vec<f32> {
     let mut normd_vec = Vec::with_capacity(vect.len());
 
     let mut max = vect[0];
@@ -66,14 +88,18 @@ fn normalize(vect: Vec<f32>) -> Vec<f32> {
         if *rating > max {
             max = *rating;
         }
-        if *rating != 0.0 && *rating < min {
+        if *rating != 0.0 && *rating < min || min == 0.0 {
             min = *rating;
         }
     }
 
+    print!("max: {}, min: {}\n", max, min);
+
     for rating in vect.iter() {
-        let norm = (2.0 * (rating - min) - (max - min)) / (max - min);
-        normd_vec.push(norm);
+        if *rating > 0.0 {
+            let norm = (2.0 * (rating - min) - (max - min)) / (max - min);
+            normd_vec.push(norm);
+        }
     }
 
     normd_vec
@@ -133,17 +159,33 @@ fn item_similarity(records: &(HashMap<String, u32>, HashMap<String, u32>, Vec<f3
                    -> f32 {
     let v_feat_1 = get_feature_vector(&records, feat_1);
     let v_feat_2 = get_feature_vector(&records, feat_2);
-    let v_avg = get_feature_vector(&records, "average");
+    let v_avg = get_user_avg(&records);
+
+    println!("AVG: {:?}", v_avg);
 
     adjusted_cosine(v_feat_1, v_feat_2, v_avg)
 }
 
 fn prediction(name: &str, feature: &str) -> f32 {
-    let records = load_database("./data/db1.csv");
+    // let records = load_database("./data/db1.csv");
+    let records = load_database("./data/db1.1.csv");
 
-    println!("{}",
-             item_similarity(&records, "Daft Punk", "Kacey Musgraves"));
-    println!("{:?}", normalize(get_user_vector(&records, "David")));
+    let user_vec = get_user_vector(&records, name);
+    let normd_vec = normalize(&user_vec);
+    let mut sim_vec = Vec::new();
+
+    let mut i = 0;
+    for (_feat, &_indx) in records.0.iter() {
+        if _feat != feature {
+            print!("{} - ", _feat);
+            sim_vec.push(item_similarity(&records, _feat, feature));
+        }
+        i += 1;
+    }
+
+    println!("{:?}", normd_vec);
+    println!("{:?}", sim_vec);
+
     3.1416
 }
 
