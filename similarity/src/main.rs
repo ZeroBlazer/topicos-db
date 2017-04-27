@@ -169,14 +169,20 @@ fn item_similarity(records: &(HashMap<String, u32>, HashMap<String, u32>, Vec<f3
 fn prediction(name: &str, feature: &str) -> f32 {
     // let records = load_database("./data/db1.csv");
     let records = load_database("./data/db1.1.csv");
+    // let records = load_database("/run/media/cs-unsax/Storage_ext4/Dev/db-topics/report01/data/Movie_Ratings_transposed.csv");
 
     let user_vec = get_user_vector(&records, name);
     let normd_vec = normalize(&user_vec);
+    // let mut sim_vec = vec![0.0; records.0.len()];
     let mut sim_vec = vec![0.0; normd_vec.0.len()];
 
+    // println!("{}: {:?}", user_vec.len(), user_vec);
+    // println!("{}: {:?}", normd_vec.0.len(), normd_vec.0);
     for (_feat, &_indx) in records.0.iter() {
+        // println!("[{}] -> {}", _indx, _feat);
         if _feat != feature {
             sim_vec[(_indx - 1) as usize] = item_similarity(&records, _feat, feature);
+            // sim_vec[_indx as usize] = item_similarity(&records, _feat, feature);
         }
     }
 
@@ -193,6 +199,19 @@ fn prediction(name: &str, feature: &str) -> f32 {
     unnormalize(norm_pred, normd_vec.1, normd_vec.2)
 }
 
+/*************************************************
+ * Cargar DB
+ * Ingresar usuario nuevo
+ *      puntaje: 10 películas
+ * Llenar predicciones
+ * Predecir
+ * Recomendar qué pelicula ver
+
+u p1 p2 p3 .. p10 | p11 p12 .. p50
+x 5  6  5     3     x   y   ..  z
+
+*************************************************/
 fn main() {
-    println!("Prediction: {}", prediction("David", "Kacey Musgraves"));
+    println!("Prediction: {}", prediction("Tori", "Kacey Musgraves"));
+    // println!("Prediction: {}", prediction("Gary", "Village"));
 }
