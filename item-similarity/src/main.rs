@@ -2,41 +2,51 @@ extern crate csv;
 extern crate rustc_serialize;
 
 use std::collections::HashMap;
+use std::collections::hash_map::Entry::{Occupied, Vacant};
 
-fn init_db_reader(path: &str) -> Reader<File> {
-    let rdr = csv::Reader::from_file(path).unwrap();
-    rdr
+struct MovieDB(HashMap<u32, HashMap<u32, f32>>, HashMap<u32, HashMap<u32, f32>>);
+
+fn item_based_prediction(name: u32, feature: u32) -> f32 {
+    
 }
 
-fn load_db(path: &str) {
-    let rdr = csv::Reader::from_file(path).has_headers(true).unwrap();
-    let mut ratings: HashMap<u32, HashMap<String, u32>> = HashMap::new();
+fn load_db(path: &str) -> MovieDB {
+    let mut rdr = csv::Reader::from_file(path).unwrap().has_headers(true);
+    let mut ratings: HashMap<u32, HashMap<u32, f32>> = HashMap::new();
+    let mut features: HashMap<u32, HashMap<u32, f32>> = HashMap::new();
 
-    // let mut i = 0;
     for record in rdr.decode() {
-        // if i > 54000 {
-        //     break;
-        // }
-        // i += 1;
-        let rating: Rating = record.unwrap();
+        let (user_id, movie_id, rating): (u32, u32, f32) = record.unwrap();
 
-        match ratings.entry(rating.user_id) {
+        match ratings.entry(user_id) {
             Vacant(entry) => {
                 let mut user_ratings = HashMap::new();
-                user_ratings.insert(rating.book_isbn, rating.rating);
+                user_ratings.insert(movie_id, rating);
                 entry.insert(user_ratings);
             }
             Occupied(entry) => {
-                entry.into_mut().insert(rating.book_isbn, rating.rating);
+                entry.into_mut().insert(movie_id, rating);
+            }
+        }
+
+        match features.entry(movie_id) {
+            Vacant(entry) => {
+                let mut movie_ratings = HashMap::new();
+                movie_ratings.insert(user_id, rating);
+                entry.insert(movie_ratings);
+            }
+            Occupied(entry) => {
+                entry.into_mut().insert(user_id, rating);
             }
         }
     }
 
-    
+    MovieDB(ratings, features)
 }
 
 fn main() {
     let db = load_db("./data/ratings.csv");
+
     println!("Hello, world!");
 }
 
