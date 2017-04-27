@@ -6,3 +6,4 @@ authors = ["Elías Puma <elpumitaelias@gmail.com>"]
 [dependencies]
 rustc-serialize = "0.3.24"
 csv = "0.14"
+text_io = "0.1.6"

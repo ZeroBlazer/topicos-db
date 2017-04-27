@@ -1,5 +1,7 @@
 extern crate csv;
 extern crate rustc_serialize;
+#[macro_use]
+extern crate text_io;
 
 use std::collections::HashMap;
 use std::collections::hash_map::Entry::{Occupied, Vacant};
@@ -27,10 +29,11 @@ fn adjusted_cosine(vec_feat_1: &Vec<f32>, vec_feat_2: &Vec<f32>, vec_avg: &Vec<f
         }
     }
 
-    print!("[{} -> {}, {}]\n",
-           usr_pref / (feat_1_sqr.sqrt() * feat_2_sqr.sqrt()),
-           usr_pref,
-           (feat_1_sqr.sqrt() * feat_2_sqr.sqrt()));
+    // if feat_1_sqr == 0.0 {
+    //     println!("{:?}", vec_feat_1);
+    //     println!("{:?}", vec_avg);
+    // }
+
     usr_pref / (feat_1_sqr.sqrt() * feat_2_sqr.sqrt())
 }
 
@@ -188,11 +191,56 @@ fn item_based_prediction(db: &MovieDB, name: u32, feature: u32) -> f32 {
     unnormalize(normd_pred, normd_usr_vec.1, normd_usr_vec.2)
 }
 
-fn main() {
-    let db = load_db("./data/ratings.csv");
-    println!("Prediction: {}", item_based_prediction(&db, 11, 5679));
+fn item_based_prediction_input(db: &mut MovieDB) -> f32 {
+    let user_id: u32;
+    let movie_id: u32;
+    println!("Enter user_id y movie_id:");
+    scan!("{} {}", user_id, movie_id);
 
-    println!("Hello, world!");
+    match db.0.entry(user_id) {
+        Vacant(entry) => {
+            let mut ratings: HashMap<u32, f32> = HashMap::new();
+            let mut movie: u32;
+            let mut rating: f32;
+            for i in 0..10 {
+                println!("Enter movie_id:");
+                scan!("{}", movie);
+                println!("Enter rating:");
+                scan!("{}", rating);
+                ratings.insert(movie, rating);
+                match db.1.entry(user_id) {    
+                    Vacant(usr_map) => {
+                        let mut user_rtngs: HashMap<u32, f32> = HashMap::new();
+                        user_rtngs.insert(user_id, rating);
+                        usr_map.insert(user_rtngs);
+                    }
+                    Occupied(usr_map) => {
+                        usr_map.into_mut().insert(user_id, rating);
+                    }
+                }
+            }
+            entry.insert(ratings);
+        }
+        Occupied(_) => {}
+    }
+
+    item_based_prediction(&db, user_id, movie_id)
+}
+
+fn main() {
+    // let mut db = load_db("./data/ratings.csv");
+    let mut db = load_db("../../../Downloads/ml-20m/ratings.csv");
+    let mut ender: u32;
+    
+    loop {
+        println!("\nPress 0 to exit:--------------------------------");
+        scan!("{}", ender);
+        if ender == 0 {
+            break;
+        }
+        println!("Prediction: {}", item_based_prediction_input(&mut db));
+    }
+    // println!("Prediction: {}", item_based_prediction(&db, 665, 5679));
 }
 
 // #[derive(Debug)]
