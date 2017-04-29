@@ -72,6 +72,22 @@ fn deviation(db: &IndexedDB, feat_1: &str, feat_2: &str) -> (f32, usize) {
     (deviation, length)
 }
 
+fn weighted_slope_one(db: &IndexedDB, user: &str, feat: &str) -> f32 {
+    let mut num = 0.0;
+    let mut den = 0.0;
+    if let Some(ref ratings) = db.0.get(&String::from(user)) {
+        for (feat_id, &rating) in ratings.iter() {
+            let (dev, card) = deviation(&db, feat, feat_id);
+            num += (dev + rating) * card as f32;
+            den += card as f32;
+        }
+    } else {
+        panic!("user is not found!");
+    }
+
+    num / den
+}
+
 // fn item_based_prediction_input(db: &mut IndexedDB,
 //                                sim_fun: fn(&MovieDB, String, String) -> f32)
 //                                -> f32 {
@@ -114,11 +130,12 @@ fn main() {
     println!("Loading database, please wait...");
     let mut db = load_db("./data/db2.csv");
     // let mut db = load_db("../report01/data/BX-Dump/BX-Book-Ratings.csv");
-    println!("Database ready!\n________________________________________________");
+    println!("Database ready!\n---------------------------------------------");
 
-    println!("{}", deviation(&db, "Taylor Swift", "PSY"));
-    println!("{}", deviation(&db, "PSY", "Whitney Houston"));
-    println!("{}", deviation(&db, "Taylor Swift", "Whitney Houston"));
+    // println!("{}", deviation(&db, "Taylor Swift", "PSY"));
+    // println!("{}", deviation(&db, "PSY", "Whitney Houston"));
+    // println!("{}", deviation(&db, "Taylor Swift", "Whitney Houston"));
+    println!("{}", weighted_slope_one(&db, "Ben", "Whitney Houston"));
 
     // let mut ender: u32;
     // loop {
