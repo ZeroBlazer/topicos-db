@@ -272,34 +272,28 @@ fn main() {
     // let mut db = load_db("../report01/data/BX-Dump/BX-Book-Ratings.csv");
     println!("Database ready!\n---------------------------------------------");
 
-    // println!("{}", deviation(&db, "Taylor Swift", "PSY"));
-    // println!("{}", deviation(&db, "PSY", "Whitney Houston"));
-    // println!("{}", deviation(&db, "Taylor Swift", "Whitney Houston"));
-    println!("{}", weighted_slope_one(&db, "Ben", "Whitney Houston"));
-    println!("{}",
-             adjusted_cosine_prediction(&db, "Ben", "Whitney Houston"));
-
-    // let mut ender: u32;
-    // loop {
-    //     println!("Press 1 to make a query with Slope One.\n\
-    //               Press 2 to make a query with Adjusted Cosine.\n\
-    //               Press 0 to exit: ");
-    //     scan!("{}", ender);
-    //     match ender {
-    //         1 => {
-    //             println!("Slope One");
-    //         }
-    //         2 => {
-    //             println!("Item similarity");
-    //         }
-    //         0 => {
-    //             break;
-    //         }
-    //         _ => {
-    //             println!("Try again");
-    //         }
-    //     }
-    //     println!("\n______________________________________________________");
-    // }
-    // println!("\nBye bytes...");
+    let mut ender: u32;
+    loop {
+        println!("Press 1 to make a query with Slope One.\n\
+                  Press 2 to make a query with Adjusted Cosine.\n\
+                  Press 0 to exit: ");
+        scan!("{}", ender);
+        match ender {
+            1 => {
+                println!("S1p: {}", weighted_slope_one(&db, "Ben", "Whitney Houston"));
+            }
+            2 => {
+                println!("ACp: {}",
+                         adjusted_cosine_prediction(&db, "Ben", "Whitney Houston"));
+            }
+            0 => {
+                break;
+            }
+            _ => {
+                println!("Try again");
+            }
+        }
+        println!("\n______________________________________________________");
+    }
+    println!("\nBye bytes...");
 }
