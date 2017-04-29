@@ -241,7 +241,6 @@ fn main() {
         }
         println!("Prediction: {}", item_based_prediction_input(&mut db));
     }
-    println!("Prediction: {}", item_based_prediction(&db, 665, 5679));
 }
 
 // #[derive(Debug)]
