@@ -243,21 +243,3 @@ fn main() {
     }
     println!("Prediction: {}", item_based_prediction(&db, 665, 5679));
 }
-
-// #[derive(Debug)]
-// struct Database {
-//     headers: HashMap<String, u32>,
-//     names: HashMap<String, u32>,
-//     records: Vec<f32>,
-// }
-
-// impl Database {
-//     fn new(path: &str) {
-//         let mut rdr = csv::Reader::from_file(path).unwrap().has_headers(true);
-//         let mut i = 0;
-//         for record in rdr.decode() {
-//             i+=1;
-//         }
-//         println!("{}", i);
-//     }
-// }
