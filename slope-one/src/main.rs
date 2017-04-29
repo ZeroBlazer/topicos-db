@@ -1,55 +1,50 @@
+extern crate csv;
+extern crate rustc_serialize;
+
+#[macro_use]
+extern crate text_io;
+
 use std::collections::HashMap;
+use std::collections::hash_map::Entry::{Occupied, Vacant};
 
-struct IndexedDB(Vec<f32>, HashMap<String, usize>, HashMap<String, usize>);
+struct IndexedDB(HashMap<String, HashMap<String, f32>>, HashMap<String, HashMap<String, f32>>);
 
-fn load_database(path: &str) -> IndexedDB {
+fn load_db(path: &str) -> IndexedDB {
     let mut rdr = csv::Reader::from_file(path).unwrap().has_headers(true);
-    let mut headers: HashMap<String, u32> = HashMap::new();
-    let mut names: HashMap<String, u32> = HashMap::new();
-    let mut records: Vec<f32> = Vec::new();
+    let mut ratings: HashMap<String, HashMap<String, f32>> = HashMap::new();
+    let mut features: HashMap<String, HashMap<String, f32>> = HashMap::new();
 
-    let mut i = 0;
-    let mut j = 0;
+    for record in rdr.decode() {
+        let (user_id, feat_id, rating): (String, String, f32) = record.unwrap();
+        let (user_id2, feat_id2, rating2) = (user_id.clone(), feat_id.clone(), rating);
 
-    loop {
-        match rdr.next_bytes() {
-            csv::NextField::Data(data) => {
-                let d_string = String::from_utf8(data.to_vec()).unwrap();
-                match j {
-                    0 => {
-                        /***********HEADERS***********/
-                        if i > 0 {
-                            headers.insert(d_string, i - 1);
-                        }
-                    }
-                    _ => {
-                        /***********RECORDS***********/
-                        match i {
-                            0 => {
-                                /***********NAMES***********/
-                                names.insert(d_string, j - 1);
-                            }
-                            _ => {
-                                /***********VALUES***********/
-                                records.push(d_string.parse::<f32>().unwrap());
-                            }
-                        }
-                    }
-                }
-                i += 1;
+        match ratings.entry(user_id) {
+            Vacant(entry) => {
+                let mut user_ratings = HashMap::new();
+                user_ratings.insert(feat_id, rating);
+                entry.insert(user_ratings);
             }
-            csv::NextField::EndOfRecord => {
-                j += 1;
-                i = 0;
+            Occupied(entry) => {
+                entry.into_mut().insert(feat_id, rating);
             }
-            csv::NextField::EndOfCsv => break,
-            csv::NextField::Error(err) => panic!(err),
+        }
+
+        match features.entry(feat_id2) {
+            Vacant(entry) => {
+                let mut movie_ratings = HashMap::new();
+                movie_ratings.insert(user_id2, rating2);
+                entry.insert(movie_ratings);
+            }
+            Occupied(entry) => {
+                entry.into_mut().insert(user_id2, rating2);
+            }
         }
     }
 
-    IndexedDB(records, headers, names)
+    IndexedDB(ratings, features)
 }
 
 fn main() {
+    let mut db = load_db("./data/db2.csv");
     println!("Hello, world!");
 }
