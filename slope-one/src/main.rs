@@ -56,11 +56,11 @@ fn deviation(db: &IndexedDB, feat_1: &str, feat_2: &str) -> (f32, usize) {
                     vec_b.push(rating_f2);
                 }
             } else {
-                panic!("1: feat_2 is not found!");
+                panic!("feat_2 is not found!");
             }
         }
     } else {
-        panic!("1: feat_1 is not found!");
+        panic!("feat_1 is not found!");
     }
 
     let length = vec_a.len();
@@ -88,8 +88,148 @@ fn weighted_slope_one(db: &IndexedDB, user: &str, feat: &str) -> f32 {
     num / den
 }
 
+fn adjusted_cosine(vec_feat_1: &Vec<f32>, vec_feat_2: &Vec<f32>, vec_avg: &Vec<f32>) -> f32 {
+    if vec_feat_1.len() != vec_feat_2.len() || vec_feat_1.len() != vec_avg.len() {
+        panic!("Should compare vectors of same size");
+    }
+
+    let n_users = vec_feat_1.len();
+
+    let mut usr_pref = 0.0;
+    let mut feat_1_sqr = 0.0;
+    let mut feat_2_sqr = 0.0;
+
+    for i in 0..n_users {
+        if vec_feat_1[i] > 0.0 && vec_feat_2[i] > 0.0 {
+            let feat_1_inf = vec_feat_1[i] - vec_avg[i];
+            let feat_2_inf = vec_feat_2[i] - vec_avg[i];
+            usr_pref += feat_1_inf * feat_2_inf;
+            feat_1_sqr += feat_1_inf.powf(2.0);
+            feat_2_sqr += feat_2_inf.powf(2.0);
+        }
+    }
+
+    usr_pref / (feat_1_sqr.sqrt() * feat_2_sqr.sqrt())
+}
+
+fn computer_user_avg(db: &IndexedDB, user: &str) -> f32 {
+    let mut avg: f32 = 0.0;
+    if let Some(ref ratings) = db.0.get(&String::from(user)) {
+        for (_, &rating) in ratings.iter() {
+            avg += rating;
+        }
+        avg /= ratings.len() as f32
+    }
+    avg
+}
+
+fn adjusted_cosine_features(db: &IndexedDB, feat_1: &str, feat_2: &str) -> f32 {
+    let mut vec_a: Vec<f32> = Vec::new();
+    let mut vec_b: Vec<f32> = Vec::new();
+    let mut vec_avg: Vec<f32> = Vec::new();
+
+    if let Some(ref ratings_f1) = db.1.get(&String::from(feat_1)) {
+        for (user_id, &rating_f1) in ratings_f1.iter() {
+            vec_avg.push(computer_user_avg(&db, user_id));
+            if let Some(ratings_f2) = db.1.get(&String::from(feat_2)) {
+                if let Some(&rating_f2) = ratings_f2.get(user_id) {
+                    vec_a.push(rating_f1);
+                    vec_b.push(rating_f2);
+                } else {
+                    vec_a.push(rating_f1);
+                    vec_b.push(0.0);
+                }
+            } else {
+                panic!("1: feat_2 is not found!");
+            }
+        }
+    } else {
+        panic!("1: feat_1 is not found!");
+    }
+
+    if let Some(ref ratings_f2) = db.1.get(&String::from(feat_2)) {
+        for (user_id, &rating_f2) in ratings_f2.iter() {
+            if let Some(ratings_f1) = db.1.get(&String::from(feat_1)) {
+                if let Some(_) = ratings_f1.get(user_id) {
+                } else {
+                    vec_a.push(0.0);
+                    vec_b.push(rating_f2);
+                    vec_avg.push(computer_user_avg(&db, user_id));
+                }
+            } else {
+                panic!("2: feat_1 is not found!");
+            }
+        }
+    } else {
+        panic!("2: feat_2 is not found!");
+    }
+
+    adjusted_cosine(&vec_a, &vec_b, &vec_avg)
+}
+
+fn prediction(sim_vec: Vec<f32>, normd_vec: Vec<f32>) -> f32 {
+    let mut num = 0.0;
+    let mut den = 0.0;
+    let inv_i = sim_vec.len();
+    for i in 0..inv_i {
+        num += sim_vec[i] * normd_vec[i];
+        den += sim_vec[i].abs();
+    }
+
+    num / den
+}
+
+fn normalize(vect: &Vec<f32>) -> (Vec<f32>, f32, f32) {
+    let mut normd_vec = Vec::with_capacity(vect.len());
+
+    let mut max = vect[0];
+    let mut min = vect[0];
+
+    for rating in vect.iter() {
+        if *rating > max {
+            max = *rating;
+        }
+        if *rating != 0.0 && *rating < min || min == 0.0 {
+            min = *rating;
+        }
+    }
+
+    for rating in vect.iter() {
+        if *rating > 0.0 {
+            let norm = (2.0 * (rating - min) - (max - min)) / (max - min);
+            normd_vec.push(norm);
+        }
+    }
+
+    (normd_vec, max, min)
+}
+
+fn unnormalize(norm_val: f32, max: f32, min: f32) -> f32 {
+    0.5 * (norm_val + 1.0) * (max - min) + min
+}
+
+fn adjusted_cosine_prediction(db: &IndexedDB, user: &str, feature: &str) -> f32 {
+    let mut sim_vec: Vec<f32> = Vec::new();
+    let mut usr_vec: Vec<f32> = Vec::new();
+
+    match db.0.get(&String::from(user)) {
+        Some(a_ratings) => {
+            for (movie_id, &rating) in a_ratings.iter() {
+                sim_vec.push(adjusted_cosine_features(db, &feature, movie_id));
+                usr_vec.push(rating);
+            }
+        }
+        None => {}
+    }
+
+    let normd_usr_vec = normalize(&usr_vec);
+    let normd_pred = prediction(sim_vec, normd_usr_vec.0);
+    println!("Normalized prediction: {}", normd_pred);
+    unnormalize(normd_pred, normd_usr_vec.1, normd_usr_vec.2)
+}
+
 // fn item_based_prediction_input(db: &mut IndexedDB,
-//                                sim_fun: fn(&MovieDB, String, String) -> f32)
+//                                sim_fun: fn(&IndexedDB, String, String) -> f32)
 //                                -> f32 {
 //     let user_id: String;
 //     let movie_id: String;
@@ -107,7 +247,7 @@ fn weighted_slope_one(db: &IndexedDB, user: &str, feat: &str) -> f32 {
 //                 println!("Enter rating:");
 //                 scan!("{}", rating);
 //                 ratings.insert(movie, rating);
-//                 match db.1.entry(user_id) {    
+//                 match db.1.entry(user_id) {
 //                     Vacant(usr_map) => {
 //                         let mut user_rtngs: HashMap<u32, f32> = HashMap::new();
 //                         user_rtngs.insert(user_id, rating);
@@ -136,6 +276,8 @@ fn main() {
     // println!("{}", deviation(&db, "PSY", "Whitney Houston"));
     // println!("{}", deviation(&db, "Taylor Swift", "Whitney Houston"));
     println!("{}", weighted_slope_one(&db, "Ben", "Whitney Houston"));
+    println!("{}",
+             adjusted_cosine_prediction(&db, "Ben", "Whitney Houston"));
 
     // let mut ender: u32;
     // loop {
