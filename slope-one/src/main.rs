@@ -228,43 +228,75 @@ fn adjusted_cosine_prediction(db: &IndexedDB, user: &str, feature: &str) -> f32 
     unnormalize(normd_pred, normd_usr_vec.1, normd_usr_vec.2)
 }
 
-// fn item_based_prediction_input(db: &mut IndexedDB,
-//                                sim_fun: fn(&IndexedDB, String, String) -> f32)
-//                                -> f32 {
-//     let user_id: String;
-//     let movie_id: String;
-//     println!("Enter user_id y movie_id:");
-//     scan!("{} {}", user_id, movie_id);
+fn prediction_input(db: &mut IndexedDB, sim_fun: fn(&IndexedDB, &str, &str) -> f32) -> f32 {
+    let user_id: String;
+    let feat_id: String;
+    println!("Enter {{user}} y {{feature}}:");
+    scan!("{} {}", user_id, feat_id);
 
-//     match db.0.entry(user_id) {
-//         Vacant(entry) => {
-//             let mut ratings: HashMap<u32, f32> = HashMap::new();
-//             let mut movie: u32;
-//             let mut rating: f32;
-//             for i in 0..10 {
-//                 println!("Enter movie_id:");
-//                 scan!("{}", movie);
-//                 println!("Enter rating:");
-//                 scan!("{}", rating);
-//                 ratings.insert(movie, rating);
-//                 match db.1.entry(user_id) {
-//                     Vacant(usr_map) => {
-//                         let mut user_rtngs: HashMap<u32, f32> = HashMap::new();
-//                         user_rtngs.insert(user_id, rating);
-//                         usr_map.insert(user_rtngs);
-//                     }
-//                     Occupied(usr_map) => {
-//                         usr_map.into_mut().insert(user_id, rating);
-//                     }
-//                 }
-//             }
-//             entry.insert(ratings);
-//         }
-//         Occupied(_) => {}
-//     }
+    if let Some(_) = db.0.get(&user_id) {
+    } else {
+        println!("\nUser not found, you'll be requested to enter 10 ratings...");
 
-//     sim_fun(&db, user_id, movie_id)
-// }
+        let mut ratings: HashMap<String, f32> = HashMap::new();
+        let mut feat: String;
+        let mut rating: f32;
+
+        for i in 0..10 {
+            println!("{}. Enter feature and rating:", i);
+            scan!("{} {}", feat, rating);
+
+            let ins_feat = feat.clone();
+
+            match db.1.entry(feat) {
+                Vacant(entry) => {
+                    let mut feat_ratings = HashMap::new();
+                    feat_ratings.insert(user_id.clone(), rating);
+                    entry.insert(feat_ratings);
+                }
+                Occupied(entry) => {
+                    entry.into_mut().insert(user_id.clone(), rating);
+                }
+            }
+
+            ratings.insert(ins_feat, rating);
+        }
+    }
+
+
+    // match db.0.entry(&user_id) {
+    //     Vacant(usr_map) => {
+    //         println!("User not found, you'll be requested to enter 10 ratings...");
+
+    //         let mut ratings: HashMap<String, f32> = HashMap::new();
+    //         let mut feat: String;
+    //         let mut rating: f32;
+
+    //         for i in 0..10 {
+    //             println!("{}. Enter feature:", i);
+    //             scan!("{}", feat);
+    //             println!("Enter rating:");
+    //             scan!("{}", rating);
+
+    //             match db.1.entry(feat) {
+    //                 Vacant(entry) => {
+    //                     let mut feat_ratings = HashMap::new();
+    //                     feat_ratings.insert(user_id.clone(), rating);
+    //                     entry.insert(feat_ratings);
+    //                 }
+    //                 Occupied(entry) => {
+    //                     entry.into_mut().insert(user_id.clone(), rating);
+    //                 }
+    //             }
+
+    //             ratings.insert(feat, rating);
+    //         }
+    //     }
+    //     Occupied(usr_map) => {}
+    // }
+
+    sim_fun(&db, user_id.as_str(), feat_id.as_str())
+}
 
 fn main() {
     println!("Loading database, please wait...");
@@ -280,11 +312,13 @@ fn main() {
         scan!("{}", ender);
         match ender {
             1 => {
-                println!("S1p: {}", weighted_slope_one(&db, "Ben", "Whitney Houston"));
+                // println!("S1p: {}", weighted_slope_one(&db, "Ben", "Whitney Houston"));
+                println!("S1p: {}", prediction_input(&mut db, weighted_slope_one));
             }
             2 => {
+                // println!("ACp: {}", adjusted_cosine_prediction(&db, "Ben", "Whitney Houston"));
                 println!("ACp: {}",
-                         adjusted_cosine_prediction(&db, "Ben", "Whitney Houston"));
+                         prediction_input(&mut db, adjusted_cosine_prediction));
             }
             0 => {
                 break;
