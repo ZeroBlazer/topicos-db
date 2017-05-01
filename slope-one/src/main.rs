@@ -1,11 +1,13 @@
 extern crate csv;
 extern crate rustc_serialize;
+extern crate time;
 
 #[macro_use]
 extern crate text_io;
 
 use std::collections::HashMap;
 use std::collections::hash_map::Entry::{Occupied, Vacant};
+use time::PreciseTime;
 
 struct IndexedDB(HashMap<String, HashMap<String, f32>>, HashMap<String, HashMap<String, f32>>);
 
@@ -263,45 +265,18 @@ fn prediction_input(db: &mut IndexedDB, sim_fun: fn(&IndexedDB, &str, &str) -> f
         }
     }
 
-
-    // match db.0.entry(&user_id) {
-    //     Vacant(usr_map) => {
-    //         println!("User not found, you'll be requested to enter 10 ratings...");
-
-    //         let mut ratings: HashMap<String, f32> = HashMap::new();
-    //         let mut feat: String;
-    //         let mut rating: f32;
-
-    //         for i in 0..10 {
-    //             println!("{}. Enter feature:", i);
-    //             scan!("{}", feat);
-    //             println!("Enter rating:");
-    //             scan!("{}", rating);
-
-    //             match db.1.entry(feat) {
-    //                 Vacant(entry) => {
-    //                     let mut feat_ratings = HashMap::new();
-    //                     feat_ratings.insert(user_id.clone(), rating);
-    //                     entry.insert(feat_ratings);
-    //                 }
-    //                 Occupied(entry) => {
-    //                     entry.into_mut().insert(user_id.clone(), rating);
-    //                 }
-    //             }
-
-    //             ratings.insert(feat, rating);
-    //         }
-    //     }
-    //     Occupied(usr_map) => {}
-    // }
-
-    sim_fun(&db, user_id.as_str(), feat_id.as_str())
+    let start = PreciseTime::now();
+    let similarity = sim_fun(&db, user_id.as_str(), feat_id.as_str());
+    let end = PreciseTime::now();
+    println!("Execution time: {} seconds", start.to(end));
+    similarity
 }
 
 fn main() {
     println!("Loading database, please wait...");
-    let mut db = load_db("./data/db2.csv");
-    // let mut db = load_db("../report01/data/BX-Dump/BX-Book-Ratings.csv");
+    // let mut db = load_db("./data/db2.csv");
+    let mut db = load_db("../report01/data/BX-Dump/BX-Book-Ratings.csv");
+    // let mut db = load_db("../../../Downloads/ml-20m/ratings.csv);
     println!("Database ready!\n---------------------------------------------");
 
     let mut ender: u32;
@@ -312,11 +287,9 @@ fn main() {
         scan!("{}", ender);
         match ender {
             1 => {
-                // println!("S1p: {}", weighted_slope_one(&db, "Ben", "Whitney Houston"));
                 println!("S1p: {}", prediction_input(&mut db, weighted_slope_one));
             }
             2 => {
-                // println!("ACp: {}", adjusted_cosine_prediction(&db, "Ben", "Whitney Houston"));
                 println!("ACp: {}",
                          prediction_input(&mut db, adjusted_cosine_prediction));
             }
