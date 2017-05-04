@@ -1,0 +1,49 @@
+LIBROS 
+155147 014034991X : Usuario existente
+    Execution time: PT0.044803515S seconds
+    S1p: 2.4785373
+
+    Execution time: PT2.119199617S seconds
+    ACp: 6.1885657
+
+    Num. of Records: 105283 items, 340555 records
+
+182085 0812572289 : Usuario existente
+    Execution time: PT0.051657411S seconds
+    S1p: 1.9927536
+
+    Execution time: PT3.529999080S seconds
+    ACp: 1.8140187
+
+    Num. of Records: 105283 items, 340555 records
+
+6532135 449214613: Usuario nuevo
+---------------------------------------
+8445071777  7.0
+385177259   10
+345382846   5
+345308999   9
+345309014   9
+345309006   9
+812575717   10
+812533550   8.8
+812509250   9
+345312333   9
+
+1173 31878 : Usuario existente
+    Execution time: PT64.515341161S seconds
+    ACp: 1.8268532
+
+    Execution time: PT1.247451839S seconds
+    S1p: 4.0415406
+
+    Num. of Records: 138493 items, 26744 records
+
+2568 3256 : Usuario existente
+    Execution time: PT549.708838435S seconds
+    ACp: 2.5206592
+
+    Execution time: PT24.059266587S seconds
+    S1p: 3.0316684
+
+    Num. of Records: 138493 items, 26744 records

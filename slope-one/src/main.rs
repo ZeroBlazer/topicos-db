@@ -12,7 +12,8 @@ use time::PreciseTime;
 struct IndexedDB(HashMap<String, HashMap<String, f32>>, HashMap<String, HashMap<String, f32>>);
 
 fn load_db(path: &str) -> IndexedDB {
-    let mut rdr = csv::Reader::from_file(path).unwrap().has_headers(false);
+    // let mut rdr = csv::Reader::from_file(path).unwrap().has_headers(false);
+    let mut rdr = csv::Reader::from_file(path).unwrap().has_headers(true);
     let mut ratings: HashMap<String, HashMap<String, f32>> = HashMap::new();
     let mut features: HashMap<String, HashMap<String, f32>> = HashMap::new();
 
@@ -102,14 +103,22 @@ fn adjusted_cosine(vec_feat_1: &Vec<f32>, vec_feat_2: &Vec<f32>, vec_avg: &Vec<f
     let mut feat_2_sqr = 0.0;
 
     for i in 0..n_users {
-        if vec_feat_1[i] > 0.0 && vec_feat_2[i] > 0.0 {
+        /*  THIS CODE APPLIES WHEN NO EXPLICIT 0 SCORES WERE GIVEN   */
+        // if vec_feat_1[i] > 0.0 && vec_feat_2[i] > 0.0 {
+        //     let feat_1_inf = vec_feat_1[i] - vec_avg[i];
+        //     let feat_2_inf = vec_feat_2[i] - vec_avg[i];
+        //     usr_pref += feat_1_inf * feat_2_inf;
+        //     feat_1_sqr += feat_1_inf.powf(2.0);
+        //     feat_2_sqr += feat_2_inf.powf(2.0);
+        // }
             let feat_1_inf = vec_feat_1[i] - vec_avg[i];
             let feat_2_inf = vec_feat_2[i] - vec_avg[i];
             usr_pref += feat_1_inf * feat_2_inf;
             feat_1_sqr += feat_1_inf.powf(2.0);
             feat_2_sqr += feat_2_inf.powf(2.0);
-        }
     }
+
+    // print!(">> {} / {} ", usr_pref, (feat_1_sqr.sqrt() * feat_2_sqr.sqrt()));
 
     usr_pref / (feat_1_sqr.sqrt() * feat_2_sqr.sqrt())
 }
@@ -176,7 +185,9 @@ fn prediction(sim_vec: Vec<f32>, normd_vec: Vec<f32>) -> f32 {
     for i in 0..inv_i {
         num += sim_vec[i] * normd_vec[i];
         den += sim_vec[i].abs();
+        // print!(">>> {} <> {} ", sim_vec[i], normd_vec[i]);   /////////debug
     }
+    // println!(">>");   /////////debug
 
     num / den
 }
@@ -191,16 +202,23 @@ fn normalize(vect: &Vec<f32>) -> (Vec<f32>, f32, f32) {
         if *rating > max {
             max = *rating;
         }
-        if *rating != 0.0 && *rating < min || min == 0.0 {
+        /*  THIS CODE APPLIES WHEN NO EXPLICIT 0 SCORES WERE GIVEN   */
+        // if *rating != 0.0 && *rating < min || min == 0.0 {
+        //     min = *rating;
+        // }
+        if *rating < min {
             min = *rating;
         }
     }
 
     for rating in vect.iter() {
-        if *rating > 0.0 {
-            let norm = (2.0 * (rating - min) - (max - min)) / (max - min);
-            normd_vec.push(norm);
-        }
+        /*  THIS CODE APPLIES WHEN NO EXPLICIT 0 SCORES WERE GIVEN   */
+        // if *rating > 0.0 {
+        //     let norm = (2.0 * (rating - min) - (max - min)) / (max - min);
+        //     normd_vec.push(norm);
+        // }
+        let norm = (2.0 * (rating - min) - (max - min)) / (max - min);
+        normd_vec.push(norm);
     }
 
     (normd_vec, max, min)
@@ -216,8 +234,8 @@ fn adjusted_cosine_prediction(db: &IndexedDB, user: &str, feature: &str) -> f32 
 
     match db.0.get(&String::from(user)) {
         Some(a_ratings) => {
-            for (movie_id, &rating) in a_ratings.iter() {
-                sim_vec.push(adjusted_cosine_features(db, &feature, movie_id));
+            for (feat_id, &rating) in a_ratings.iter() {
+                sim_vec.push(adjusted_cosine_features(db, &feature, feat_id));
                 usr_vec.push(rating);
             }
         }
@@ -263,6 +281,8 @@ fn prediction_input(db: &mut IndexedDB, sim_fun: fn(&IndexedDB, &str, &str) -> f
 
             ratings.insert(ins_feat, rating);
         }
+        
+        db.0.insert(user_id.clone(), ratings);
     }
 
     let start = PreciseTime::now();
@@ -275,8 +295,8 @@ fn prediction_input(db: &mut IndexedDB, sim_fun: fn(&IndexedDB, &str, &str) -> f
 fn main() {
     println!("Loading database, please wait...");
     // let mut db = load_db("./data/db2.csv");
-    let mut db = load_db("../report01/data/BX-Dump/BX-Book-Ratings.csv");
-    // let mut db = load_db("../../../Downloads/ml-20m/ratings.csv);
+    // let mut db = load_db("../report01/data/BX-Dump/BX-Book-Ratings.csv");
+    let mut db = load_db("../../../Downloads/ml-20m/ratings.csv");
     println!("Database ready!\n---------------------------------------------");
 
     let mut ender: u32;
@@ -300,7 +320,8 @@ fn main() {
                 println!("Try again");
             }
         }
-        println!("\n______________________________________________________");
+        println!("\nNum. of Records: {} items, {} records", db.0.len(), db.1.len());
+        println!("\n-------------------------------------------------------");
     }
     println!("\nBye bytes...");
 }
