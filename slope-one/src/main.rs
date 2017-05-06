@@ -256,13 +256,15 @@ fn prediction_input(db: &mut IndexedDB, sim_fun: fn(&IndexedDB, &str, &str) -> f
 
     if let Some(_) = db.0.get(&user_id) {
     } else {
-        println!("\nUser not found, you'll be requested to enter 10 ratings...");
+        println!("\nUser not found, you'll be requested to enter some ratings.\nEnter number of ratings...");
+        let n_ratings: u32;
+        scan!("{}", n_ratings);
 
         let mut ratings: HashMap<String, f32> = HashMap::new();
         let mut feat: String;
         let mut rating: f32;
 
-        for i in 0..10 {
+        for i in 0..n_ratings {
             println!("{}. Enter feature and rating:", i);
             scan!("{} {}", feat, rating);
 
