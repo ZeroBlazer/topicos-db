@@ -1,13 +1,15 @@
 extern crate csv;
 extern crate rustc_serialize;
-extern crate stopwatch;
+extern crate time;
+// extern crate stopwatch;
 
 #[macro_use]
 extern crate text_io;
 
+use time::PreciseTime;
 use std::collections::HashMap;
 use std::collections::hash_map::Entry::{Occupied, Vacant};
-use stopwatch::Stopwatch;
+// use stopwatch::Stopwatch;
 
 struct IndexedDB(HashMap<String, HashMap<String, f32>>, HashMap<String, HashMap<String, f32>>);
 
@@ -114,7 +116,7 @@ fn knn_pearson_coef(db: &IndexedDB, user: &str, k: u32) -> IndexedDB {
         let mut vec_a: Vec<f32> = Vec::new();
         let mut vec_b: Vec<f32> = Vec::new();
 
-        if user_2 != user {
+        // if user_2 != user {
             for (feat_u, &rating_u) in ratings_u.iter() {
                 if let Some(&rating) = ratings_2.get(feat_u) {
                     vec_a.push(rating_u);
@@ -133,7 +135,7 @@ fn knn_pearson_coef(db: &IndexedDB, user: &str, k: u32) -> IndexedDB {
                 }
             }
             pearson_coefs.push((pearson_coef(&vec_a, &vec_b), user_2.clone()));
-        }
+        // }
     }
 
     pearson_coefs.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
@@ -141,7 +143,7 @@ fn knn_pearson_coef(db: &IndexedDB, user: &str, k: u32) -> IndexedDB {
     let mut db_ratings: HashMap<String, HashMap<String, f32>> = HashMap::new();
     let mut db_features: HashMap<String, HashMap<String, f32>> = HashMap::new();
 
-    for _ in 0..k {
+    for _ in 0..(k+1) {
         let (_, user_id) = pearson_coefs.pop().unwrap();
 
         if let Some(ratings) = db.0.get(&user_id) {
@@ -183,8 +185,8 @@ fn improved_slope_one(db: &IndexedDB, user: &str, feat: &str) -> f32 {
     let mut num = 0.0;
     let mut den = 0.0;
 
-    // let s_k = knn_pearson_coef(db, user, 10);
-    let s_k = knn_pearson_coef(db, user, 2);
+    let s_k = knn_pearson_coef(db, user, 10);
+    // let s_k = knn_pearson_coef(db, user, 2);
 
     if let Some(ref ratings) = s_k.0.get(&String::from(user)) {
         for (feat_id, &rating) in ratings.iter() {
@@ -239,19 +241,22 @@ fn prediction_input(db: &mut IndexedDB, sim_fun: fn(&IndexedDB, &str, &str) -> f
         db.0.insert(user_id.clone(), ratings);
     }
 
-    let sw = Stopwatch::start_new();
+    // let sw = Stopwatch::start_new();
+    let start = PreciseTime::now();
     let similarity = sim_fun(&db, user_id.as_str(), feat_id.as_str());
-    println!("Execution time: {}ms", sw.elapsed_ms());
+    let end = PreciseTime::now();
+    println!("Execution time: {} seconds", start.to(end));
+    // println!("Execution time: {}ms", sw.elapsed_ms());
 
     similarity
 }
 
 fn main() {
     println!("Loading database, please wait...");
+    // let mut db = load_db("../slope-one/data/db2.csv");
     // let mut db = load_db("../report01/data/BX-Dump/BX-Book-Ratings.csv");
     // let mut db = load_db("../../../Downloads/ml-20m/ratings.csv");
     let mut db = load_db("../../../Downloads/ml-latest-small/ratings.csv"); // 311 1479
-    // let mut db = load_db("../slope-one/data/db2.csv");
     println!("Database ready!\n---------------------------------------------");
 
     let mut ender: u32;
