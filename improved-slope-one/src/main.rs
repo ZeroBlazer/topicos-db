@@ -141,25 +141,26 @@ fn knn_pearson_coef(db: &IndexedDB, user: &str, k: u32) -> IndexedDB {
     let mut db_ratings: HashMap<String, HashMap<String, f32>> = HashMap::new();
     let mut db_features: HashMap<String, HashMap<String, f32>> = HashMap::new();
 
-    for i in 0..k {
+    for _ in 0..k {
         let (_, user_id) = pearson_coefs.pop().unwrap();
 
         if let Some(ratings) = db.0.get(&user_id) {
-            for (ref feat_id, &rating) in ratings.iter() {
+            for (feat_id, &rating) in ratings.iter() {
+                let user_id1 = user_id.clone();
                 let (user_id2, feat_id2, rating2) = (user_id.clone(), feat_id.clone(), rating);
 
-                match db_ratings.entry(user_id) {
+                match db_ratings.entry(user_id1) {
                     Vacant(entry) => {
                         let mut usr_ratings = HashMap::new();
-                        usr_ratings.insert(feat_id, rating);
+                        usr_ratings.insert(feat_id.clone(), rating);
                         entry.insert(usr_ratings);
                     }
                     Occupied(entry) => {
-                        entry.into_mut().insert(feat_id, rating);
+                        entry.into_mut().insert(feat_id.clone(), rating);
                     }
                 }
 
-                match db_features.entry(*feat_id2) {
+                match db_features.entry(feat_id2) {
                     Vacant(entry) => {
                         let mut movie_ratings = HashMap::new();
                         movie_ratings.insert(user_id2, rating2);
@@ -249,8 +250,8 @@ fn main() {
     println!("Loading database, please wait...");
     // let mut db = load_db("../report01/data/BX-Dump/BX-Book-Ratings.csv");
     // let mut db = load_db("../../../Downloads/ml-20m/ratings.csv");
-    // let mut db = load_db("../../../Downloads/ml-latest-small/ratings.csv"); // 311 1479
-    let mut db = load_db("../slope-one/data/db2.csv");
+    let mut db = load_db("../../../Downloads/ml-latest-small/ratings.csv"); // 311 1479
+    // let mut db = load_db("../slope-one/data/db2.csv");
     println!("Database ready!\n---------------------------------------------");
 
     let mut ender: u32;

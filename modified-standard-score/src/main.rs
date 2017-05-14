@@ -119,3 +119,4 @@ fn main() {
 
     // println!("Med: {:?}", abs_standard_deviation(&mut vec![43., 45., 55., 69., 70., 75., 105., 115.]));
 }
+ñ

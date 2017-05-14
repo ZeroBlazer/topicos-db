@@ -298,7 +298,8 @@ fn main() {
     println!("Loading database, please wait...");
     // let mut db = load_db("./data/db2.csv");
     // let mut db = load_db("../report01/data/BX-Dump/BX-Book-Ratings.csv");
-    let mut db = load_db("../../../Downloads/ml-20m/ratings.csv");
+    // let mut db = load_db("../../../Downloads/ml-20m/ratings.csv");
+    let mut db = load_db("../../../Downloads/ml-latest-small/ratings.csv"); // 311 1479
     println!("Database ready!\n---------------------------------------------");
 
     let mut ender: u32;
