@@ -182,7 +182,8 @@ fn improved_slope_one(db: &IndexedDB, user: &str, feat: &str) -> f32 {
     let mut num = 0.0;
     let mut den = 0.0;
 
-    let s_k = knn_pearson_coef(db, user, 10);
+    // let s_k = knn_pearson_coef(db, user, 10);
+    let s_k = knn_pearson_coef(db, user, 2);
 
     if let Some(ref ratings) = s_k.0.get(&String::from(user)) {
         for (feat_id, &rating) in ratings.iter() {
@@ -248,7 +249,8 @@ fn main() {
     println!("Loading database, please wait...");
     // let mut db = load_db("../report01/data/BX-Dump/BX-Book-Ratings.csv");
     // let mut db = load_db("../../../Downloads/ml-20m/ratings.csv");
-    let mut db = load_db("../../../Downloads/ml-latest-small/ratings.csv"); // 311 1479
+    // let mut db = load_db("../../../Downloads/ml-latest-small/ratings.csv"); // 311 1479
+    let mut db = load_db("../slope-one/data/db2.csv");
     println!("Database ready!\n---------------------------------------------");
 
     let mut ender: u32;
