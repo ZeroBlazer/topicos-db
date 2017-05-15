@@ -75,7 +75,7 @@ fn median(vec: &Vec<f32>) -> f32 {
 fn abs_standard_deviation(vec: &Vec<f32>) -> (f32, f32) {
     let median = median(vec);
     let mut asd = 0.0;
-    
+
     for x in vec.iter() {
         asd += (x - median).abs();
     }
@@ -96,6 +96,7 @@ fn user_rating_vector(db: &IndexedDB, id: &str) -> Vec<f32> {
             ret_vec.push(rating);
         }
     }
+
     ret_vec
 }
 
@@ -105,16 +106,20 @@ fn nearest_neighbors(db: &IndexedDB,
                      -> Vec<(f32, String)> {
     let obj_vec = user_rating_vector(db, id);
     let mut dist_vec: Vec<(f32, String)> = Vec::new();
-    
+
+    println!("OBJ: {:?}", obj_vec);
+
     for (rec_id, _) in db.0.iter() {
         if id != rec_id.as_str() {
             let rec_str = rec_id.clone();
             let rec_vec = user_rating_vector(db, rec_id);
+            println!("{:?}", rec_vec);
+            println!("{} -> {}", rec_str, func(&obj_vec, &rec_vec));
             dist_vec.push((func(&obj_vec, &rec_vec), rec_str));
         }
     }
 
-    dist_vec.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap());
+    dist_vec.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
     dist_vec
 }
 
@@ -123,7 +128,8 @@ fn main() {
     let db = load_db("./data/music.csv");
     println!("Database ready!\n---------------------------------------------");
 
-    println!("{:?}", nearest_neighbors(&db, "Dr Dog/Fate", manhattan_dist));
+    println!("{:?}",
+             nearest_neighbors(&db, "Dr Dog/Fate", manhattan_dist));
 
     // println!("Med: {:?}", abs_standard_deviation(&mut vec![43., 45., 55., 69., 70., 75., 105., 115.]));
 }
