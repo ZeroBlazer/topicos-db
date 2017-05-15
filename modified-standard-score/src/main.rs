@@ -75,15 +75,18 @@ fn median(vec: &Vec<f32>) -> f32 {
 fn abs_standard_deviation(vec: &Vec<f32>) -> (f32, f32) {
     let median = median(vec);
     let mut asd = 0.0;
+    
     for x in vec.iter() {
         asd += (x - median).abs();
     }
+
     (asd / vec.len() as f32, median)
 }
 
-fn mod_standard_score(vec: &Vec<f32>) -> f32 {
+fn mod_standard_score(val: f32, vec: &Vec<f32>) -> f32 {
     let (asd, median) = abs_standard_deviation(vec);
 
+    (val - median) / asd
 }
 
 fn user_rating_vector(db: &IndexedDB, id: &str) -> Vec<f32> {
@@ -110,6 +113,7 @@ fn nearest_neighbors(db: &IndexedDB,
             dist_vec.push((func(&obj_vec, &rec_vec), rec_str));
         }
     }
+
     dist_vec.sort_by(|a, b| b.0.partial_cmp(&a.0).unwrap());
     dist_vec
 }
@@ -119,8 +123,7 @@ fn main() {
     let db = load_db("./data/music.csv");
     println!("Database ready!\n---------------------------------------------");
 
-    println!("{:?}",
-             nearest_neighbors(&db, "Dr Dog/Fate", manhattan_dist));
+    println!("{:?}", nearest_neighbors(&db, "Dr Dog/Fate", manhattan_dist));
 
     // println!("Med: {:?}", abs_standard_deviation(&mut vec![43., 45., 55., 69., 70., 75., 105., 115.]));
 }
