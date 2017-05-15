@@ -4,3 +4,6 @@
 [submodule "slope-one/report02"]
 	path = slope-one/report02
 	url = https://git.overleaf.com/9373898zrqhhqrfyccv
+[submodule "improved-slope-one/report"]
+	path = improved-slope-one/report
+	url = https://git.overleaf.com/9572327mvxrgnmwfnng
