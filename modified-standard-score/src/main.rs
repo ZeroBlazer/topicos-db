@@ -68,7 +68,7 @@ fn median(vec: &Vec<f32>) -> f32 {
         ret += vec_cpy[mid - 1];
         ret /= 2.0;
     }
-    // println!("{} /2 -> {}", length, length / 2);
+
     ret
 }
 
@@ -82,12 +82,6 @@ fn abs_standard_deviation(vec: &Vec<f32>) -> (f32, f32) {
 
     (asd / vec.len() as f32, median)
 }
-
-// fn mod_standard_score(val: f32, vec: &Vec<f32>) -> f32 {
-//     let (asd, median) = abs_standard_deviation(vec);
-
-//     (val - median) / asd
-// }
 
 fn mod_standard_score(vec: &Vec<f32>) -> Vec<f32> {
     let (asd, median) = abs_standard_deviation(vec);
@@ -144,17 +138,12 @@ fn nearest_neighbors(db: &IndexedDB,
                      id: &str,
                      func: fn(&Vec<f32>, &Vec<f32>) -> f32)
                      -> Vec<(f32, String)> {
-    // let obj_vec = user_rating_vector(db, id);
     let mut dist_vec: Vec<(f32, String)> = Vec::new();
-
-    // println!("OBJ: {:?}", obj_vec);
 
     for (rec_id, _) in db.0.iter() {
         if id != rec_id.as_str() {
             let rec_str = rec_id.clone();
             let (obj_vec, rec_vec) = users_rating_vectors(db, id, rec_id);
-            // println!("{:?}\n{:?}", obj_vec, rec_vec);
-            // println!("{} -> {}", rec_str, func(&obj_vec, &rec_vec));
             dist_vec.push((func(&obj_vec, &rec_vec), rec_str));
         }
     }
@@ -168,12 +157,12 @@ fn main() {
     let db = load_db("./data/music.csv");
     println!("Database ready!\n---------------------------------------------");
 
-    println!("{:?}",
-             nearest_neighbors(&db, "Dr Dog/Fate", manhattan_dist));
+    println!("{:?}", nearest_neighbors(&db, "Cagle", manhattan_dist));
+    //  nearest_neighbors(&db, "Dr Dog/Fate", manhattan_dist));
 
-    println!("Med: {:?}",
-             abs_standard_deviation(&mut vec![43., 45., 55., 69., 70., 75., 105., 115.]));
+    // println!("Med: {:?}",
+    //          abs_standard_deviation(&mut vec![43., 45., 55., 69., 70., 75., 105., 115.]));
 
-    println!("{:?}",
-             mod_standard_score(&vec![43., 45., 55., 69., 70., 75., 105., 115.]));
+    // println!("{:?}",
+    //          mod_standard_score(&vec![43., 45., 55., 69., 70., 75., 105., 115.]));
 }
