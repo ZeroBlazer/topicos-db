@@ -89,30 +89,70 @@ fn mod_standard_score(val: f32, vec: &Vec<f32>) -> f32 {
     (val - median) / asd
 }
 
-fn user_rating_vector(db: &IndexedDB, id: &str) -> Vec<f32> {
-    let mut ret_vec = Vec::new();
-    if let Some(ref ratings) = db.0.get(&String::from(id)) {
-        for (_, &rating) in ratings.iter() {
-            ret_vec.push(rating);
+// fn user_rating_vector(db: &IndexedDB, id: &str) -> Vec<f32> {
+//     let mut ret_vec = Vec::new();
+//     if let Some(ref ratings) = db.0.get(&String::from(id)) {
+//         for (_, &rating) in ratings.iter() {
+//             ret_vec.push(rating);
+//         }
+//     }
+
+//     ret_vec
+// }
+
+fn users_rating_vectors(db: &IndexedDB, id1: &str, id2: &str) -> (Vec<f32>, Vec<f32>) {
+    let mut usr1_vec: Vec<f32> = Vec::new();
+    let mut usr2_vec: Vec<f32> = Vec::new();
+
+    if let Some(ref ratings1) = db.0.get(&String::from(id1)) {
+        for (feat1_id, &rating1) in ratings1.iter() {
+            usr1_vec.push(rating1);
+            if let Some(ref ratings2) = db.0.get(&String::from(id2)) {
+                if let Some(rating2) = ratings2.get(feat1_id) {
+                    usr2_vec.push(*rating2);
+                } else {
+                    usr2_vec.push(0.0);
+                }
+            } else {
+                panic!("user2 is not found!");
+            }
         }
+    } else {
+        panic!("user1 not found!");
     }
 
-    ret_vec
+    if let Some(ref ratings2) = db.0.get(&String::from(id2)) {
+        for (feat2_id, &rating2) in ratings2.iter() {
+            if let Some(ref ratings1) = db.0.get(&String::from(id1)) {
+                if let Some(_) = ratings1.get(feat2_id) {
+                } else {
+                    usr2_vec.push(rating2);
+                    usr1_vec.push(0.0);
+                }
+            } else {
+                panic!("user2 is not found!");
+            }
+        }
+    } else {
+        panic!("user1 not found!");
+    }
+
+    (usr1_vec, usr2_vec)
 }
 
 fn nearest_neighbors(db: &IndexedDB,
                      id: &str,
                      func: fn(&Vec<f32>, &Vec<f32>) -> f32)
                      -> Vec<(f32, String)> {
-    let obj_vec = user_rating_vector(db, id);
+    // let obj_vec = user_rating_vector(db, id);
     let mut dist_vec: Vec<(f32, String)> = Vec::new();
 
-    println!("OBJ: {:?}", obj_vec);
+    // println!("OBJ: {:?}", obj_vec);
 
     for (rec_id, _) in db.0.iter() {
         if id != rec_id.as_str() {
             let rec_str = rec_id.clone();
-            let rec_vec = user_rating_vector(db, rec_id);
+            let (obj_vec, rec_vec) = users_rating_vectors(db, id, rec_id);
             println!("{:?}", rec_vec);
             println!("{} -> {}", rec_str, func(&obj_vec, &rec_vec));
             dist_vec.push((func(&obj_vec, &rec_vec), rec_str));
@@ -128,8 +168,7 @@ fn main() {
     let db = load_db("./data/music.csv");
     println!("Database ready!\n---------------------------------------------");
 
-    println!("{:?}",
-             nearest_neighbors(&db, "Dr Dog/Fate", manhattan_dist));
+    println!("{:?}", nearest_neighbors(&db, "Dr Dog/Fate", manhattan_dist));
 
     // println!("Med: {:?}", abs_standard_deviation(&mut vec![43., 45., 55., 69., 70., 75., 105., 115.]));
 }
