@@ -192,24 +192,34 @@ fn standarize_db(mut db: &mut IndexedDB) {
     }
 }
 
+fn comparison(db: &IndexedDB, id1: &str, id2: &str) {
+    if let Some(ref ratings1) = db.0.get(&String::from(id1)) {
+        for (feat1_id, &rating1) in ratings1.iter() {
+            if let Some(ref ratings2) = db.0.get(&String::from(id2)) {
+                if let Some(rating2) = ratings2.get(feat1_id) {
+                    let diff = (rating1 - rating2).abs();
+                    if diff < 0.8 && (rating1 + rating2).abs() / 2.0 > 0.3 {
+                        println!("\t{}: {} <> {} -> {}", feat1_id, rating1, rating2, diff);
+                    }
+                }
+            } else {
+                panic!("user2 is not found!");
+            }
+        }
+    } else {
+        panic!("user1 not found!");
+    }
+}
+
 fn main() {
     println!("Loading database, please wait...");
     let mut db = load_db("./data/music.csv");
     standarize_db(&mut db);
     println!("Database ready!\n---------------------------------------------");
 
-    println!("{:?}", nearest_neighbors(&db, "Cagle", euclidian_dist));
-    println!("{:?}", nearest_neighbors(&db, "Cagle", manhattan_dist));
-
     let nn = nearest_neighbors(&db, "Cagle", euclidian_dist);
-    println!("{:?}", nn);
-            //  nearest_neighbors(&db, "Dr Dog/Fate", manhattan_dist));
-
-    // println!("Med: {:?}",
-    //          abs_standard_deviation(&mut vec![43., 45., 55., 69., 70., 75., 105., 115.]));
-
-    // println!("{:?}",
-    //          mod_standard_score(&vec![43., 45., 55., 69., 70., 75., 105., 115.]));
+    println!("KNN: {:?}\n\nR> {}:", nn, nn[0].1);
+    comparison(&db, "Cagle", nn[0].1.as_ref());
 }
 
 // Cagle,piano,1
