@@ -83,16 +83,16 @@ fn abs_standard_deviation(vec: &Vec<f32>) -> (f32, f32) {
     (asd / vec.len() as f32, median)
 }
 
-fn mod_standard_score(vec: &Vec<f32>) -> Vec<f32> {
-    let (asd, median) = abs_standard_deviation(vec);
-    let mut stnzd_vec = Vec::new();
+// fn mod_standard_score(vec: &Vec<f32>) -> Vec<f32> {
+//     let (asd, median) = abs_standard_deviation(vec);
+//     let mut stnzd_vec = Vec::new();
 
-    for val in vec.iter() {
-        stnzd_vec.push((val - median) / asd);
-    }
+//     for val in vec.iter() {
+//         stnzd_vec.push((val - median) / asd);
+//     }
 
-    stnzd_vec
-}
+//     stnzd_vec
+// }
 
 fn users_rating_vectors(db: &IndexedDB, id1: &str, id2: &str) -> (Vec<f32>, Vec<f32>) {
     let mut usr1_vec: Vec<f32> = Vec::new();
@@ -152,13 +152,46 @@ fn nearest_neighbors(db: &IndexedDB,
     dist_vec
 }
 
+// fn get_feature_vec(db: &IndexedDB, feat_id: &String) -> Vec<f32> {
+//     let mut feat_vec: Vec<f32> = Vec::new();
+
+//     if let Some(ref ratings) = db.1.get(feat_id) {
+//         for (_, &rating) in ratings.iter() {
+//             feat_vec.push(rating);
+//         }
+//     } else {
+//         panic!("Feature not found in DB!");
+//     }
+
+//     feat_vec
+// }
+
+fn standarize_db(mut db: &mut IndexedDB) {
+    for (feat, ratings) in db.1.iter_mut() {
+        let mut feat_vec: Vec<f32> = Vec::new();
+        for rating in ratings.values() {
+            feat_vec.push(*rating);
+        }
+
+        print!("{}: ", feat);
+        let (asd, median) = abs_standard_deviation(&feat_vec);
+        for (usr, rating) in ratings.iter_mut() {
+            *rating = (*rating - median) / asd;
+            *db.0.get_mut(usr).unwrap().get_mut(feat).unwrap() = *rating;
+            print!("{} ", rating);
+        }
+        println!("");
+    }
+}
+
 fn main() {
     println!("Loading database, please wait...");
-    let db = load_db("./data/music.csv");
+    let mut db = load_db("./data/music.csv");
+    // standarize_db(&mut db);
     println!("Database ready!\n---------------------------------------------");
 
     println!("{:?}", nearest_neighbors(&db, "Cagle", manhattan_dist));
-    //  nearest_neighbors(&db, "Dr Dog/Fate", manhattan_dist));
+            //  nearest_neighbors(&db, "Dr Dog/Fate", manhattan_dist));
 
     // println!("Med: {:?}",
     //          abs_standard_deviation(&mut vec![43., 45., 55., 69., 70., 75., 105., 115.]));
@@ -166,3 +199,11 @@ fn main() {
     // println!("{:?}",
     //          mod_standard_score(&vec![43., 45., 55., 69., 70., 75., 105., 115.]));
 }
+
+// Cagle,piano,1
+// Cagle,vocals,5
+// Cagle,beat,2.5
+// Cagle,blues,1
+// Cagle,guitar,1
+// Cagle,backup vocals,5
+// Cagle,rap,1
