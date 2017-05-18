@@ -9,15 +9,26 @@ fn manhattan_dist(x: &Vec<f32>, y: &Vec<f32>) -> f32 {
     if x.len() != y.len() {
         panic!("Should compare vectors of same size");
     }
-    let mut distance = 0.0;
 
+    let mut distance = 0.0;
     for i in 0..x.len() {
-        if x[i] > 0.0 && y[i] > 0.0 {
-            distance += (x[i] - y[i]).abs();
-        }
+        distance += (x[i] - y[i]).abs();
     }
 
     distance
+}
+
+fn euclidian_dist(x: &Vec<f32>, y: &Vec<f32>) -> f32 {
+    if x.len() != y.len() {
+        panic!("Should compare vectors of same size");
+    }
+    let mut distance = 0.0;
+
+    for i in 0..x.len() {
+        distance += (x[i] - y[i]).powf(2.0);
+    }
+
+    distance.sqrt()
 }
 ///////////////////////////////////////////////////////////////////////
 
@@ -173,24 +184,25 @@ fn standarize_db(mut db: &mut IndexedDB) {
             feat_vec.push(*rating);
         }
 
-        print!("{}: ", feat);
         let (asd, median) = abs_standard_deviation(&feat_vec);
         for (usr, rating) in ratings.iter_mut() {
             *rating = (*rating - median) / asd;
             *db.0.get_mut(usr).unwrap().get_mut(feat).unwrap() = *rating;
-            print!("{} ", rating);
         }
-        println!("");
     }
 }
 
 fn main() {
     println!("Loading database, please wait...");
     let mut db = load_db("./data/music.csv");
-    // standarize_db(&mut db);
+    standarize_db(&mut db);
     println!("Database ready!\n---------------------------------------------");
 
+    println!("{:?}", nearest_neighbors(&db, "Cagle", euclidian_dist));
     println!("{:?}", nearest_neighbors(&db, "Cagle", manhattan_dist));
+
+    let nn = nearest_neighbors(&db, "Cagle", euclidian_dist);
+    println!("{:?}", nn);
             //  nearest_neighbors(&db, "Dr Dog/Fate", manhattan_dist));
 
     // println!("Med: {:?}",
