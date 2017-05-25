@@ -1,9 +1,9 @@
 [submodule "report01/report"]
-	path = report01/report
+	path = projects/report01/report
 	url = https://git.overleaf.com/9179316zwzpyzgrjdjz
 [submodule "slope-one/report02"]
-	path = slope-one/report02
+	path = projects/slope-one/report02
 	url = https://git.overleaf.com/9373898zrqhhqrfyccv
 [submodule "improved-slope-one/report"]
-	path = improved-slope-one/report
+	path = projects/improved-slope-one/report
 	url = https://git.overleaf.com/9572327mvxrgnmwfnng

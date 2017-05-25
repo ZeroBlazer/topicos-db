@@ -101,7 +101,8 @@ fn abs_standard_deviation(vec: &Vec<f32>) -> (f32, f32) {
 //     for val in vec.iter() {
 //         stnzd_vec.push((val - median) / asd);
 //     }
-
+// let mut usr1_vec: Vec<f32> = Vec::new();
+    // let mut usr2_vec: Vec<f32> = Vec::new();
 //     stnzd_vec
 // }
 
@@ -198,7 +199,7 @@ fn comparison(db: &IndexedDB, id1: &str, id2: &str) {
             if let Some(ref ratings2) = db.0.get(&String::from(id2)) {
                 if let Some(rating2) = ratings2.get(feat1_id) {
                     let diff = (rating1 - rating2).abs();
-                    if diff < 0.8 && (rating1 + rating2).abs() / 2.0 > 0.3 {
+                    if diff < 0.8 && (rating1 + rating2) / 2.0 >= 0.0 {
                         println!("\t{}: {} <> {} -> {}", feat1_id, rating1, rating2, diff);
                     }
                 }
@@ -217,11 +218,39 @@ fn main() {
     standarize_db(&mut db);
     println!("Database ready!\n---------------------------------------------");
 
-    let nn = nearest_neighbors(&db, "Cagle", euclidian_dist);
+    let nn = nearest_neighbors(&db, "Ole", euclidian_dist);
     println!("KNN: {:?}\n\nR> {}:", nn, nn[0].1);
-    comparison(&db, "Cagle", nn[0].1.as_ref());
+    comparison(&db, "Ole", nn[0].1.as_ref());    
 }
 
+// La Roux/Bulletproof,piano,5
+// La Roux/Bulletproof,vocals,5
+// La Roux/Bulletproof,beat,4
+// La Roux/Bulletproof,blues,2
+// La Roux/Bulletproof,guitar,1
+// La Roux/Bulletproof,backup vocals,1
+// La Roux/Bulletproof,rap,1
+// Mike Posner,piano,2.5
+// Mike Posner,vocals,4
+// Mike Posner,beat,4
+// Mike Posner,blues,1
+// Mike Posner,guitar,1
+// Mike Posner,backup vocals,1
+// Mike Posner,rap,1
+// Black Eyed Peas/Rock That Body,piano,2
+// Black Eyed Peas/Rock That Body,vocals,5
+// Black Eyed Peas/Rock That Body,beat,5
+// Black Eyed Peas/Rock That Body,blues,1
+// Black Eyed Peas/Rock That Body,guitar,2
+// Black Eyed Peas/Rock That Body,backup vocals,2
+// Black Eyed Peas/Rock That Body,rap,4
+// Lady Gaga/Alejandro,piano,1
+// Lady Gaga/Alejandro,vocals,5
+// Lady Gaga/Alejandro,beat,3
+// Lady Gaga/Alejandro,blues,2
+// Lady Gaga/Alejandro,guitar,1
+// Lady Gaga/Alejandro,backup vocals,2
+// Lady Gaga/Alejandro,rap,1
 // Cagle,piano,1
 // Cagle,vocals,5
 // Cagle,beat,2.5
