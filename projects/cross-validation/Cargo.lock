@@ -25,6 +25,7 @@ name = "database"
 version = "0.1.0"
 dependencies = [
  "csv 0.14.7 (registry+https://github.com/rust-lang/crates.io-index)",
+ "distance 0.1.0",
  "rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "utilities 0.1.0",
 ]
