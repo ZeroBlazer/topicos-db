@@ -1,12 +1,18 @@
 extern crate rustc_serialize;
 extern crate csv;
+extern crate utilities;
 
 use std::collections::HashMap;
+use utilities::abs_standard_deviation;
 
 /******************** Athletes DB ********************/
 #[derive(Debug)]
 #[derive(RustcDecodable)]
-pub struct AthlRecord(String, u32, u32);
+pub struct AthlRecord {
+    class: String,
+    height: f32,
+    weight: f32,
+}
 
 #[derive(Debug)]
 pub struct AthlDatabase {
@@ -16,7 +22,10 @@ pub struct AthlDatabase {
 
 impl AthlDatabase {
     pub fn load(path: &str) -> AthlDatabase {
-        let mut rdr = csv::Reader::from_file(path).unwrap().delimiter(b'\t').has_headers(true);
+        let mut rdr = csv::Reader::from_file(path)
+            .unwrap()
+            .delimiter(b'\t')
+            .has_headers(true);
 
         let mut keys: HashMap<String, usize> = HashMap::new();
         let mut data: Vec<AthlRecord> = Vec::new();
@@ -26,28 +35,39 @@ impl AthlDatabase {
             let rcrd: (String, AthlRecord) = record.unwrap();
             keys.insert(rcrd.0, indx);
             data.push(rcrd.1);
-            
+
             indx += 1;
         }
 
         AthlDatabase {
             keys: keys,
-            data: data
+            data: data,
         }
     }
 
     pub fn standarize(&mut self) {
         println!("Standarizing DB...");
-        for (feat, ratings) in db.1.iter_mut() {
+        for i in 0..2 {
             let mut feat_vec: Vec<f32> = Vec::new();
-            for rating in ratings.values() {
-                feat_vec.push(*rating);
+            for feat in self.data.iter() {
+                feat_vec.push(match i {
+                                  0 => feat.height,
+                                  1 => feat.weight,
+                                  _ => { panic!("Out of range, fn covers only two options"); }
+                              });
             }
 
             let (asd, median) = abs_standard_deviation(&feat_vec);
-            for (usr, rating) in ratings.iter_mut() {
-                *rating = (*rating - median) / asd;
-                *db.0.get_mut(usr).unwrap().get_mut(feat).unwrap() = *rating;
+            for feat in self.data.iter_mut() {
+                match i {
+                    0 => {
+                        feat.height = (feat.height - median) / asd;
+                    }
+                    1 => {
+                        feat.weight = (feat.weight - median) / asd;
+                    }
+                    _ => {}
+                }
             }
         }
     }
