@@ -9,5 +9,5 @@ fn main() {
     db.standarize();    // println!("{:?}", db);
     println!("Database ready!\n---------------------------------------------");
 
-    println!("Pred: {:?}", db.predict(70.0, 170.0));
+    println!("Pred => {:?}", db.predict(70.0, 170.0));
 }

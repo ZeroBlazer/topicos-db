@@ -119,7 +119,8 @@ impl AthlDatabase {
             }
         }
 
-        self.nearest_neighbors(&rcrd, manhattan_dist);
+        rcrd.class = self.data[self.nearest_neighbors(&rcrd, manhattan_dist)[0]].class.clone();
+        // println!("{:?}", self.data[self.nearest_neighbors(&rcrd, manhattan_dist)[0]]);
         rcrd
     }
 }
