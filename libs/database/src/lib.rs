@@ -126,42 +126,45 @@ impl AthlDatabase {
 }
 /*******************************************************/
 
-/******************** Athletes DB ********************/
+/******************** Miles per Gallon DB ********************/
 #[derive(Debug)]
 #[derive(RustcDecodable)]
-pub struct AthlRecord {
-    class: String,
-    height: f32,
+pub struct MpgRecord {
+    mpg: f32,
+    cylinders: f32,
+    ci: f32,
+    hp: f32,
     weight: f32,
+    secs: f32,
 }
 
 #[derive(Debug)]
-pub struct AthlDatabase {
+pub struct MpgDatabase {
     keys: HashMap<String, usize>,
-    data: Vec<AthlRecord>,
+    data: Vec<MpgRecord>,
     asd_data: Vec<(f32, f32)>,
 }
 
-impl AthlDatabase {
-    pub fn from_file(path: &str) -> AthlDatabase {
+impl MpgDatabase {
+    pub fn from_file(path: &str) -> MpgDatabase {
         let mut rdr = csv::Reader::from_file(path)
             .unwrap()
             .delimiter(b'\t')
             .has_headers(true);
 
         let mut keys: HashMap<String, usize> = HashMap::new();
-        let mut data: Vec<AthlRecord> = Vec::new();
+        let mut data: Vec<MpgRecord> = Vec::new();
 
         let mut indx = 0;
         for record in rdr.decode() {
-            let rcrd: (String, AthlRecord) = record.unwrap();
-            keys.insert(rcrd.0, indx);
-            data.push(rcrd.1);
+            let rcrd: (MpgRecord, String) = record.unwrap();
+            data.push(rcrd.0);
+            keys.insert(rcrd.1, indx);
 
             indx += 1;
         }
 
-        AthlDatabase {
+        MpgDatabase {
             keys: keys,
             data: data,
             asd_data: Vec::new()
