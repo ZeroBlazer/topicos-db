@@ -130,7 +130,30 @@ impl AthlDatabase {
         db.standarize();
         println!("Database ready!\n---------------------------------------------");
 
-        println!("Pred => {:?}", db.predict(70.0, 170.0));
+        let mut rdr = csv::Reader::from_file(test_path)
+            .unwrap()
+            .delimiter(b'\t')
+            .has_headers(true);
+
+        let mut n_correct = 0;
+        let mut n_incorrect = 0;
+        let mut count = 0;
+        for record in rdr.decode() {
+            let rcrd: (String, AthlRecord) = record.unwrap();
+            let pred = db.predict(rcrd.1.height, rcrd.1.weight);
+
+            println!("{} <> {}", rcrd.1.class, pred.class);
+            if rcrd.1.class == pred.class {
+                n_correct += 1;
+            } else {
+                n_incorrect += 1;
+            }
+            count += 1;
+        }
+        
+        println!("Correct: {}%\nIncorrect: {}%",
+                  n_correct as f32 * 100.0 / count as f32,
+                  n_incorrect as f32 * 100.0 / count as f32);
     } 
 }
 /*******************************************************/
