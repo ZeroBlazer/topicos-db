@@ -142,7 +142,7 @@ impl AthlDatabase {
             let rcrd: (String, AthlRecord) = record.unwrap();
             let pred = db.predict(rcrd.1.height, rcrd.1.weight);
 
-            println!("{} <> {}", rcrd.1.class, pred.class);
+            // println!("{} <> {}", rcrd.1.class, pred.class);
             if rcrd.1.class == pred.class {
                 n_correct += 1;
             } else {
@@ -151,7 +151,7 @@ impl AthlDatabase {
             count += 1;
         }
         
-        println!("Correct: {}%\nIncorrect: {}%",
+        println!("Correct: {}%\nIncorrect: {}%\n",
                   n_correct as f32 * 100.0 / count as f32,
                   n_incorrect as f32 * 100.0 / count as f32);
     } 
@@ -270,6 +270,15 @@ impl MpgDatabase {
         indexes
     }
 
+    pub fn standarize_record(&self, record: &mut MpgRecord) {
+        record.mpg = (record.mpg - self.asd_data[0].1) / self.asd_data[0].0;
+        record.cylinders = (record.cylinders - self.asd_data[1].1) / self.asd_data[1].0;
+        record.ci = (record.ci - self.asd_data[2].1) / self.asd_data[2].0;
+        record.hp = (record.hp - self.asd_data[3].1) / self.asd_data[3].0;
+        record.weight = (record.weight - self.asd_data[4].1) / self.asd_data[4].0;
+        record.secs = (record.secs - self.asd_data[5].1) / self.asd_data[5].0;
+    }
+
     pub fn predict(&self, cylinders: f32, ci: f32, hp: f32, weight: f32, secs: f32) -> MpgRecord {
         let mut rcrd = MpgRecord {
             mpg: 0.0,
@@ -315,32 +324,32 @@ impl MpgDatabase {
         db.standarize();
         println!("Database ready!\n---------------------------------------------");
 
-        println!("Pred => {:?}", db.predict(8.0, 360.0, 215.0, 4615.0, 14.0));
+        let mut rdr = csv::Reader::from_file(test_path)
+            .unwrap()
+            .delimiter(b'\t')
+            .has_headers(true);
+
+        let mut n_correct = 0;
+        let mut n_incorrect = 0;
+        let mut count = 0;
+        for record in rdr.decode() {
+            let mut rcrd: (MpgRecord, String) = record.unwrap();
+            let pred = db.predict(rcrd.0.cylinders, rcrd.0.ci, rcrd.0.hp, rcrd.0.weight, rcrd.0.secs);
+
+            db.standarize_record(&mut rcrd.0);
+            // println!("{} <> {}", rcrd.0.mpg, pred.mpg);
+            if rcrd.0.mpg == pred.mpg {
+                n_correct += 1;
+            } else {
+                n_incorrect += 1;
+            }
+            count += 1;
+        }
+        
+        println!("Correct: {}%\nIncorrect: {}%\n",
+                  n_correct as f32 * 100.0 / count as f32,
+                  n_incorrect as f32 * 100.0 / count as f32);
+        // println!("Pred => {:?}", db.predict(8.0, 360.0, 215.0, 4615.0, 14.0));
     } 
 }
 /*******************************************************/
-
-// def test(training_filename, test_filename):
-//     """Test the classifier on a test set of data"""
-//     classifier = Classifier(training_filename)
-//     f = open(test_filename)
-//     lines = f.readlines()
-//     f.close()
-//     numCorrect = 0.0
-//     for line in lines:
-//         data = line.strip().split('\t')
-//         vector = []
-//         classInColumn = -1
-//         for i in range(len(classifier.format)):
-//               if classifier.format[i] == 'num':
-//                   vector.append(float(data[i]))
-//               elif classifier.format[i] == 'class':
-//                   classInColumn = i
-//         theClass= classifier.classify(vector)
-//         prefix = '-'
-//         if theClass == data[classInColumn]:
-//             # it is correct
-//             numCorrect += 1
-//             prefix = '+'
-//         print("%s  %12s  %s" % (prefix, theClass, line))
-//     print("%4.2f%% correct" % (numCorrect * 100/ len(lines)))
