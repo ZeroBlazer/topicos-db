@@ -221,15 +221,11 @@ impl MpgDatabase {
     }
 
     fn nearest_neighbors(&self, rcrd: &MpgRecord, func: fn(&Vec<f32>, &Vec<f32>) -> f32) -> Vec<usize> {
-        let feats = vec![rcrd.cylinders,
-            ci,
-            hp,
-            weight,
-            secs];
+        let feats = vec![rcrd.cylinders, rcrd.ci, rcrd.hp, rcrd.weight, rcrd.secs];
         let mut distances: Vec<(f32, usize)> = Vec::new();
         let mut i = 0;
         for record in self.data.iter() {
-            distances.push((func(&feats, &vec![record.height, record.weight]), i));
+            distances.push((func(&feats, &vec![record.cylinders, record.ci, record.hp, record.weight, record.secs]), i));
             i += 1;
         }
         distances.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
@@ -276,7 +272,7 @@ impl MpgDatabase {
             }
         }
 
-        rcrd.class = self.data[self.nearest_neighbors(&rcrd, manhattan_dist)[0]].mpg;
+        rcrd.mpg = self.data[self.nearest_neighbors(&rcrd, manhattan_dist)[0]].mpg;
         // println!("{:?}", self.data[self.nearest_neighbors(&rcrd, manhattan_dist)[0]]);
         rcrd
     }
