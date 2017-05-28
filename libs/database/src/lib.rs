@@ -123,6 +123,15 @@ impl AthlDatabase {
         // println!("{:?}", self.data[self.nearest_neighbors(&rcrd, manhattan_dist)[0]]);
         rcrd
     }
+
+    pub fn test(training_path: &str, test_path: &str) {
+        println!("Loading database, please wait...");
+        let mut db = AthlDatabase::from_file(training_path);
+        db.standarize();
+        println!("Database ready!\n---------------------------------------------");
+
+        println!("Pred => {:?}", db.predict(70.0, 170.0));
+    } 
 }
 /*******************************************************/
 
@@ -276,10 +285,17 @@ impl MpgDatabase {
         // println!("{:?}", self.data[self.nearest_neighbors(&rcrd, manhattan_dist)[0]]);
         rcrd
     }
+
+    pub fn test(training_path: &str, test_path: &str) {
+        println!("Loading database, please wait...");
+        let mut db = MpgDatabase::from_file(training_path);
+        db.standarize();
+        println!("Database ready!\n---------------------------------------------");
+
+        println!("Pred => {:?}", db.predict(8.0, 360.0, 215.0, 4615.0, 14.0));
+    } 
 }
 /*******************************************************/
-
-
 
 // def test(training_filename, test_filename):
 //     """Test the classifier on a test set of data"""
