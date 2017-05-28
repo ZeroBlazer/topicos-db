@@ -170,6 +170,116 @@ impl MpgDatabase {
             asd_data: Vec::new()
         }
     }
+
+    pub fn standarize(&mut self) {
+        println!("Standarizing DB...");
+        for i in 0..6 {
+            let mut feat_vec: Vec<f32> = Vec::new();
+            for feat in self.data.iter() {
+                feat_vec.push(match i {
+                                  0 => feat.mpg,
+                                  1 => feat.cylinders,
+                                  2 => feat.ci,
+                                  3 => feat.hp,
+                                  4 => feat.weight,
+                                  5 => feat.secs,
+                                  _ => {
+                    panic!("Out of range, fn covers only two options");
+                }
+                              });
+            }
+
+            let (asd, median) = abs_standard_deviation(&feat_vec);
+            println!("\t{}> asd: {}\tmedian: {}", i, asd, median);
+
+            for feat in self.data.iter_mut() {
+                match i {
+                    0 => {
+                        feat.mpg = (feat.mpg - median) / asd;
+                    }
+                    1 => {
+                        feat.cylinders = (feat.cylinders - median) / asd;
+                    }
+                    2 => {
+                        feat.ci = (feat.ci - median) / asd;
+                    }
+                    3 => {
+                        feat.hp = (feat.hp - median) / asd;
+                    }
+                    4 => {
+                        feat.weight = (feat.weight - median) / asd;
+                    }
+                    5 => {
+                        feat.secs = (feat.secs - median) / asd;
+                    }
+                    _ => {}
+                }
+            }
+
+            self.asd_data.push((asd, median));
+        }
+    }
+
+    fn nearest_neighbors(&self, rcrd: &MpgRecord, func: fn(&Vec<f32>, &Vec<f32>) -> f32) -> Vec<usize> {
+        let feats = vec![rcrd.cylinders,
+            ci,
+            hp,
+            weight,
+            secs];
+        let mut distances: Vec<(f32, usize)> = Vec::new();
+        let mut i = 0;
+        for record in self.data.iter() {
+            distances.push((func(&feats, &vec![record.height, record.weight]), i));
+            i += 1;
+        }
+        distances.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+
+        let mut indexes = Vec::new();
+        for record in distances.iter() {
+            indexes.push(record.1);
+        }
+
+        indexes
+    }
+
+    pub fn predict(&self, cylinders: f32, ci: f32, hp: f32, weight: f32, secs: f32) -> MpgRecord {
+        let mut rcrd = MpgRecord {
+            mpg: 0.0,
+            cylinders: cylinders,
+            ci: ci,
+            hp: hp,
+            weight: weight,
+            secs: secs
+        };
+
+        for i in 0..6 {
+            match i {
+                // 0 => {
+                //     rcrd.mpg = (rcrd.mpg - self.asd_data[i].1) / self.asd_data[i].0;
+                // }
+                1 => {
+                    rcrd.cylinders = (rcrd.cylinders - self.asd_data[i].1) / self.asd_data[i].0;
+                }
+                2 => {
+                    rcrd.ci = (rcrd.ci - self.asd_data[i].1) / self.asd_data[i].0;
+                }
+                3 => {
+                    rcrd.hp = (rcrd.hp - self.asd_data[i].1) / self.asd_data[i].0;
+                }
+                4 => {
+                    rcrd.weight = (rcrd.weight - self.asd_data[i].1) / self.asd_data[i].0;
+                }
+                5 => {
+                    rcrd.secs = (rcrd.secs - self.asd_data[i].1) / self.asd_data[i].0;
+                }
+                _ => {}
+            }
+        }
+
+        rcrd.class = self.data[self.nearest_neighbors(&rcrd, manhattan_dist)[0]].mpg;
+        // println!("{:?}", self.data[self.nearest_neighbors(&rcrd, manhattan_dist)[0]]);
+        rcrd
+    }
 }
 /*******************************************************/
 
