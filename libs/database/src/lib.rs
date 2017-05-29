@@ -47,7 +47,7 @@ impl AthlDatabase {
         AthlDatabase {
             keys: keys,
             data: data,
-            asd_data: Vec::new()
+            asd_data: Vec::new(),
         }
     }
 
@@ -84,7 +84,10 @@ impl AthlDatabase {
         }
     }
 
-    fn nearest_neighbors(&self, rcrd: &AthlRecord, func: fn(&Vec<f32>, &Vec<f32>) -> f32) -> Vec<usize> {
+    fn nearest_neighbors(&self,
+                         rcrd: &AthlRecord,
+                         func: fn(&Vec<f32>, &Vec<f32>) -> f32)
+                         -> Vec<usize> {
         let feats = vec![rcrd.height, rcrd.weight];
         let mut distances: Vec<(f32, usize)> = Vec::new();
         let mut i = 0;
@@ -121,7 +124,9 @@ impl AthlDatabase {
             }
         }
 
-        rcrd.class = self.data[self.nearest_neighbors(&rcrd, manhattan_dist)[0]].class.clone();
+        rcrd.class = self.data[self.nearest_neighbors(&rcrd, manhattan_dist)[0]]
+            .class
+            .clone();
         // println!("{:?}", self.data[self.nearest_neighbors(&rcrd, manhattan_dist)[0]]);
         rcrd
     }
@@ -152,10 +157,10 @@ impl AthlDatabase {
             }
             count += 1;
         }
-        
+
         println!("Correct: {}%\nIncorrect: {}%\n",
-                  n_correct as f32 * 100.0 / count as f32,
-                  n_incorrect as f32 * 100.0 / count as f32);
+                 n_correct as f32 * 100.0 / count as f32,
+                 n_incorrect as f32 * 100.0 / count as f32);
 
         n_correct as f32 * 100.0 / count as f32
     }
@@ -203,7 +208,7 @@ impl MpgDatabase {
         MpgDatabase {
             keys: keys,
             data: data,
-            asd_data: Vec::new()
+            asd_data: Vec::new(),
         }
     }
 
@@ -256,12 +261,21 @@ impl MpgDatabase {
         }
     }
 
-    fn nearest_neighbors(&self, rcrd: &MpgRecord, func: fn(&Vec<f32>, &Vec<f32>) -> f32) -> Vec<usize> {
+    fn nearest_neighbors(&self,
+                         rcrd: &MpgRecord,
+                         func: fn(&Vec<f32>, &Vec<f32>) -> f32)
+                         -> Vec<usize> {
         let feats = vec![rcrd.cylinders, rcrd.ci, rcrd.hp, rcrd.weight, rcrd.secs];
         let mut distances: Vec<(f32, usize)> = Vec::new();
         let mut i = 0;
         for record in self.data.iter() {
-            distances.push((func(&feats, &vec![record.cylinders, record.ci, record.hp, record.weight, record.secs]), i));
+            distances.push((func(&feats,
+                                 &vec![record.cylinders,
+                                       record.ci,
+                                       record.hp,
+                                       record.weight,
+                                       record.secs]),
+                            i));
             i += 1;
         }
         distances.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
@@ -290,7 +304,7 @@ impl MpgDatabase {
             ci: ci,
             hp: hp,
             weight: weight,
-            secs: secs
+            secs: secs,
         };
 
         for i in 0..6 {
@@ -338,7 +352,11 @@ impl MpgDatabase {
         let mut count = 0;
         for record in rdr.decode() {
             let mut rcrd: (MpgRecord, String) = record.unwrap();
-            let pred = db.predict(rcrd.0.cylinders, rcrd.0.ci, rcrd.0.hp, rcrd.0.weight, rcrd.0.secs);
+            let pred = db.predict(rcrd.0.cylinders,
+                                  rcrd.0.ci,
+                                  rcrd.0.hp,
+                                  rcrd.0.weight,
+                                  rcrd.0.secs);
 
             db.standarize_record(&mut rcrd.0);
             // println!("{} <> {}", rcrd.0.mpg, pred.mpg);
@@ -349,44 +367,48 @@ impl MpgDatabase {
             }
             count += 1;
         }
-        
+
         println!("Correct: {}%\nIncorrect: {}%\n",
-                  n_correct as f32 * 100.0 / count as f32,
-                  n_incorrect as f32 * 100.0 / count as f32);
+                 n_correct as f32 * 100.0 / count as f32,
+                 n_incorrect as f32 * 100.0 / count as f32);
         // println!("Pred => {:?}", db.predict(8.0, 360.0, 215.0, 4615.0, 14.0));
         n_correct as f32 * 100.0 / count as f32
     }
 
     pub fn cross_validation(training_path: &str, n: usize, prefix: &str) {
-        let mut rdr = csv::Reader::from_file(training_path)
-            .unwrap()
-            .delimiter(b'\t')
-            .has_headers(true);
+        // let mut rdr = csv::Reader::from_file(training_path)
+        //     .unwrap()
+        //     .delimiter(b'\t')
+        //     .has_headers(true);
 
-        let mut data: Vec<MpgRecord> = Vec::new();
+        // let mut data: Vec<MpgRecord> = Vec::new();
 
-        let mut count = 0;
-        for record in rdr.decode() {
-            let rcrd: (MpgRecord, String) = record.unwrap();
-            data.push(rcrd.0);
-            count += 1;
-        }
+        // let mut count = 0;
+        // for record in rdr.decode() {
+        //     let rcrd: (MpgRecord, String) = record.unwrap();
+        //     data.push(rcrd.0);
+        //     count += 1;
+        // }
 
-        let mut wtr_vec: Vec<(csv::Writer<std::fs::File>, usize)> = Vec::new();
-        for i in 0..n {
-            let mut path = String::from("../../data/cross-validation/") + prefix;
-            let mut wtr = csv::Writer::from_path(path.as_ref())?;
-            wtr_vec.push(wtr, 0);
-        }
+        // let mut wtr_vec: Vec<(csv::Writer<std::fs::File>, usize)> = Vec::new();
+        // for i in 0..n {
+        //     let mut path = String::from("../../data/cross-validation/") + prefix;
+        //     let mut wtr = csv::Writer::from_path(path.as_ref())?;
+        //     wtr_vec.push(wtr, 0);
+        // }
 
-        for i in 0..count {
-            let rand = rand::random::<usize>() % n;
-            wtr_vec[rand].0.write_record(data[i]);
-            wtr_vec[rand].1 += 1;
-        }
+        // for i in 0..count {
+        //     let rand = rand::random::<usize>() % n;
+        //     wtr_vec[rand].0.write_record(data[i]);
+        //     wtr_vec[rand].1 += 1;
+        // }
 
-        for i in 0..n {
-            wtr_vec[i].0.flush()?;
+        // for i in 0..n {
+        //     wtr_vec[i].0.flush()?;
+        // }
+
+        for i in 1..n + 1 {
+            println!("{}{}", prefix, i);
         }
     }
 }
