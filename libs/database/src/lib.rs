@@ -6,7 +6,7 @@ extern crate rand;
 
 use std::collections::HashMap;
 use utilities::abs_standard_deviation;
-use distance::manhattan_dist;
+use distance::{manhattan_dist, euclidian_dist, pearson_coef};
 use rand::Rng;
 
 /******************** Athletes DB ********************/
@@ -187,6 +187,14 @@ pub struct MpgDatabase {
 }
 
 impl MpgDatabase {
+    pub fn new() -> MpgDatabase {
+        MpgDatabase {
+            keys: HashMap::new(),
+            data: Vec::new(),
+            asd_data: Vec::new(),
+        }
+    }
+
     pub fn from_file(path: &str) -> MpgDatabase {
         let mut rdr = csv::Reader::from_file(path)
             .unwrap()
@@ -209,6 +217,19 @@ impl MpgDatabase {
             keys: keys,
             data: data,
             asd_data: Vec::new(),
+        }
+    }
+
+    pub fn add_file(&mut self, path: &str) {
+        let mut rdr = csv::Reader::from_file(path)
+            .unwrap()
+            .delimiter(b'\t')
+            .has_headers(false);
+
+        for record in rdr.decode() {
+            let rcrd: (MpgRecord, String) = record.unwrap();
+            self.keys.insert(rcrd.1, self.data.len());
+            self.data.push(rcrd.0);
         }
     }
 
@@ -332,7 +353,8 @@ impl MpgDatabase {
         }
 
         rcrd.mpg = self.data[self.nearest_neighbors(&rcrd, manhattan_dist)[0]].mpg;
-        // println!("{:?}", self.data[self.nearest_neighbors(&rcrd, manhattan_dist)[0]]);
+        // rcrd.mpg = self.data[self.nearest_neighbors(&rcrd, euclidian_dist)[0]].mpg;
+        // rcrd.mpg = self.data[self.nearest_neighbors(&rcrd, pearson_coef)[0]].mpg;
         rcrd
     }
 
@@ -376,40 +398,61 @@ impl MpgDatabase {
     }
 
     pub fn cross_validation(training_path: &str, n: usize, prefix: &str) {
-        // let mut rdr = csv::Reader::from_file(training_path)
-        //     .unwrap()
-        //     .delimiter(b'\t')
-        //     .has_headers(true);
+        let mut presition = 0.0;
 
-        // let mut data: Vec<MpgRecord> = Vec::new();
+        for j in 1..n + 1 {
+            let mut db = MpgDatabase::new();
 
-        // let mut count = 0;
-        // for record in rdr.decode() {
-        //     let rcrd: (MpgRecord, String) = record.unwrap();
-        //     data.push(rcrd.0);
-        //     count += 1;
-        // }
+            for i in 1..n + 1 {
+                if i != j {
+                    let path = format!("../../data/cross-validation/{}-{number:>0width$}",
+                                       prefix,
+                                       number = i,
+                                       width = 2);
+                    db.add_file(path.as_ref());
+                }
+            }
 
-        // let mut wtr_vec: Vec<(csv::Writer<std::fs::File>, usize)> = Vec::new();
-        // for i in 0..n {
-        //     let mut path = String::from("../../data/cross-validation/") + prefix;
-        //     let mut wtr = csv::Writer::from_path(path.as_ref())?;
-        //     wtr_vec.push(wtr, 0);
-        // }
+            db.standarize();
+            let path = format!("../../data/cross-validation/{}-{number:>0width$}",
+                               prefix,
+                               number = j,
+                               width = 2);
+            let mut rdr = csv::Reader::from_file(path)
+                .unwrap()
+                .delimiter(b'\t')
+                .has_headers(false);
 
-        // for i in 0..count {
-        //     let rand = rand::random::<usize>() % n;
-        //     wtr_vec[rand].0.write_record(data[i]);
-        //     wtr_vec[rand].1 += 1;
-        // }
+            let mut n_correct = 0;
+            let mut n_incorrect = 0;
+            let mut count = 0;
+            for record in rdr.decode() {
+                let mut rcrd: (MpgRecord, String) = record.unwrap();
+                let pred = db.predict(rcrd.0.cylinders,
+                                      rcrd.0.ci,
+                                      rcrd.0.hp,
+                                      rcrd.0.weight,
+                                      rcrd.0.secs);
 
-        // for i in 0..n {
-        //     wtr_vec[i].0.flush()?;
-        // }
+                db.standarize_record(&mut rcrd.0);
 
-        for i in 1..n + 1 {
-            println!("{}{}", prefix, i);
+                if rcrd.0.mpg == pred.mpg {
+                    n_correct += 1;
+                } else {
+                    n_incorrect += 1;
+                }
+                count += 1;
+            }
+
+            println!("Correct: {}%\nIncorrect: {}%\n",
+                     n_correct as f32 * 100.0 / count as f32,
+                     n_incorrect as f32 * 100.0 / count as f32);
+
+            presition += n_correct as f32 * 100.0 / count as f32;
         }
+
+        presition /= n as f32;
+        println!("Avg pres: {}%", presition);
     }
 }
 /*******************************************************/
