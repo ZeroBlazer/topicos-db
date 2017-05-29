@@ -2,10 +2,12 @@ extern crate rustc_serialize;
 extern crate csv;
 extern crate utilities;
 extern crate distance;
+extern crate rand;
 
 use std::collections::HashMap;
 use utilities::abs_standard_deviation;
 use distance::manhattan_dist;
+use rand::Rng;
 
 /******************** Athletes DB ********************/
 #[derive(Debug)]
@@ -124,7 +126,7 @@ impl AthlDatabase {
         rcrd
     }
 
-    pub fn test(training_path: &str, test_path: &str) {
+    pub fn test(training_path: &str, test_path: &str) -> f32 {
         println!("Loading database, please wait...");
         let mut db = AthlDatabase::from_file(training_path);
         db.standarize();
@@ -154,7 +156,9 @@ impl AthlDatabase {
         println!("Correct: {}%\nIncorrect: {}%\n",
                   n_correct as f32 * 100.0 / count as f32,
                   n_incorrect as f32 * 100.0 / count as f32);
-    } 
+
+        n_correct as f32 * 100.0 / count as f32
+    }
 }
 /*******************************************************/
 
@@ -318,7 +322,7 @@ impl MpgDatabase {
         rcrd
     }
 
-    pub fn test(training_path: &str, test_path: &str) {
+    pub fn test(training_path: &str, test_path: &str, has_headers: bool) -> f32 {
         println!("Loading database, please wait...");
         let mut db = MpgDatabase::from_file(training_path);
         db.standarize();
@@ -327,7 +331,7 @@ impl MpgDatabase {
         let mut rdr = csv::Reader::from_file(test_path)
             .unwrap()
             .delimiter(b'\t')
-            .has_headers(true);
+            .has_headers(has_headers);
 
         let mut n_correct = 0;
         let mut n_incorrect = 0;
@@ -350,6 +354,40 @@ impl MpgDatabase {
                   n_correct as f32 * 100.0 / count as f32,
                   n_incorrect as f32 * 100.0 / count as f32);
         // println!("Pred => {:?}", db.predict(8.0, 360.0, 215.0, 4615.0, 14.0));
-    } 
+        n_correct as f32 * 100.0 / count as f32
+    }
+
+    pub fn cross_validation(training_path: &str, n: usize, prefix: &str) {
+        let mut rdr = csv::Reader::from_file(training_path)
+            .unwrap()
+            .delimiter(b'\t')
+            .has_headers(true);
+
+        let mut data: Vec<MpgRecord> = Vec::new();
+
+        let mut count = 0;
+        for record in rdr.decode() {
+            let rcrd: (MpgRecord, String) = record.unwrap();
+            data.push(rcrd.0);
+            count += 1;
+        }
+
+        let mut wtr_vec: Vec<(csv::Writer<std::fs::File>, usize)> = Vec::new();
+        for i in 0..n {
+            let mut path = String::from("../../data/cross-validation/") + prefix;
+            let mut wtr = csv::Writer::from_path(path.as_ref())?;
+            wtr_vec.push(wtr, 0);
+        }
+
+        for i in 0..count {
+            let rand = rand::random::<usize>() % n;
+            wtr_vec[rand].0.write_record(data[i]);
+            wtr_vec[rand].1 += 1;
+        }
+
+        for i in 0..n {
+            wtr_vec[i].0.flush()?;
+        }
+    }
 }
 /*******************************************************/
