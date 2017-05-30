@@ -358,35 +358,39 @@ impl MpgDatabase {
     }
 
     pub fn cross_validation(training_path: &str, n: usize, prefix: &str) {
-        let mut rdr = csv::Reader::from_file(training_path)
-            .unwrap()
-            .delimiter(b'\t')
-            .has_headers(true);
+        // let mut rdr = csv::Reader::from_file(training_path)
+        //     .unwrap()
+        //     .delimiter(b'\t')
+        //     .has_headers(true);
 
-        let mut data: Vec<MpgRecord> = Vec::new();
+        // let mut data: Vec<MpgRecord> = Vec::new();
 
-        let mut count = 0;
-        for record in rdr.decode() {
-            let rcrd: (MpgRecord, String) = record.unwrap();
-            data.push(rcrd.0);
-            count += 1;
-        }
+        // let mut count = 0;
+        // for record in rdr.decode() {
+        //     let rcrd: (MpgRecord, String) = record.unwrap();
+        //     data.push(rcrd.0);
+        //     count += 1;
+        // }
 
-        let mut wtr_vec: Vec<(csv::Writer<std::fs::File>, usize)> = Vec::new();
-        for i in 0..n {
-            let mut path = String::from("../../data/cross-validation/") + prefix;
-            let mut wtr = csv::Writer::from_path(path.as_ref())?;
-            wtr_vec.push(wtr, 0);
-        }
+        // let mut wtr_vec: Vec<(csv::Writer<std::fs::File>, usize)> = Vec::new();
+        // for i in 0..n {
+        //     let mut path = String::from("../../data/cross-validation/") + prefix;
+        //     let mut wtr = csv::Writer::from_path(path.as_ref())?;
+        //     wtr_vec.push(wtr, 0);
+        // }
 
-        for i in 0..count {
-            let rand = rand::random::<usize>() % n;
-            wtr_vec[rand].0.write_record(data[i]);
-            wtr_vec[rand].1 += 1;
-        }
+        // for i in 0..count {
+        //     let rand = rand::random::<usize>() % n;
+        //     wtr_vec[rand].0.write_record(data[i]);
+        //     wtr_vec[rand].1 += 1;
+        // }
 
-        for i in 0..n {
-            wtr_vec[i].0.flush()?;
+        // for i in 0..n {
+        //     wtr_vec[i].0.flush()?;
+        // }
+
+        for i in 1..n+1 {
+            println!("{}{i:0width$}", prefix, i, width=6);
         }
     }
 }
