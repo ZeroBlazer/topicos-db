@@ -11,3 +11,14 @@ fn main() {
     // println!("Pred => {:?}", db.predict(70.0, 170.0));
     // println!("Pred => {:?}", db.predict(8.0, 360.0, 215.0, 4615.0, 14.0));
 }
+
+// kNN
+// Any neural network
+// SVM
+
+// Iris (imposible > 98.0)
+// Autos
+// Papers DB (140 dims): eficiencia
+
+// Métrica de distancia
+// Jueves 8 Agosto
