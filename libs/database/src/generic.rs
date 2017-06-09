@@ -2,13 +2,18 @@ use quick_csv::Csv;
 use rustc_serialize;
 use utilities::abs_standard_deviation;
 use ::std::marker::PhantomData;
+use ::std::clone::Clone;
+use distance::manhattan_dist;
 
-pub trait Record<U> {
+pub trait Record<U>
+    where U: Clone
+{
     fn record_len() -> usize;
     fn data_at(&self, index: usize) -> f32;
     fn standarize_field(&mut self, index: usize, asd_median: &(f32, f32));
     fn values(&self) -> Vec<f32>;
-    fn get_class(&self) -> &U;
+    fn set_values(&mut self, Vec<f32>);
+    fn get_class(&self) -> U;
 }
 
 #[derive(Debug, RustcDecodable)]
@@ -17,7 +22,9 @@ pub struct MpgRecord<U> {
     values: [f32; 5],
 }
 
-impl<U> Record<U> for MpgRecord<U> {
+impl<U> Record<U> for MpgRecord<U>
+    where U: Clone
+{
     fn record_len() -> usize {
         5
     }
@@ -34,8 +41,14 @@ impl<U> Record<U> for MpgRecord<U> {
         self.values.to_vec()
     }
 
-    fn get_class(&self) -> &U {
-        &self.class
+    fn get_class(&self) -> U {
+        self.class.clone()
+    }
+
+    fn set_values(&mut self, values: Vec<f32>) {
+        for i in 0..self.values.len() {
+            self.values[i] = values[i];
+        }
     }
 }
 
@@ -45,7 +58,9 @@ pub struct IrisRecord<U> {
     values: [f32; 4],
 }
 
-impl<U> Record<U> for IrisRecord<U> {
+impl<U> Record<U> for IrisRecord<U> 
+    where U: Clone
+{
     fn record_len() -> usize {
         4
     }
@@ -62,14 +77,21 @@ impl<U> Record<U> for IrisRecord<U> {
         self.values.to_vec()
     }
 
-    fn get_class(&self) -> &U {
-        &self.class
+    fn get_class(&self) -> U {
+        self.class.clone()
+    }
+
+    fn set_values(&mut self, values: Vec<f32>) {
+        for i in 0..self.values.len() {
+            self.values[i] = values[i];
+        }
     }
 }
 
 #[derive(Debug)]
 pub struct Database<T, U>
-    where T: Record<U>
+    where T: Record<U>,
+          U: Clone
 {
     data: Vec<T>,
     abs_sd: Vec<(f32, f32)>,
@@ -77,7 +99,8 @@ pub struct Database<T, U>
 }
 
 impl<T, U> Database<T, U>
-    where T: rustc_serialize::Decodable + ::std::fmt::Debug + Record<U>
+    where T: rustc_serialize::Decodable + ::std::fmt::Debug + Record<U>,
+          U: Clone
 {
     pub fn new() -> Database<T, U> {
         Database {
@@ -152,16 +175,17 @@ impl<T, U> Database<T, U>
         indexes
     }
 
-    // pub fn predict(&self, vals: Vec<f32>) -> T<U> {
-    //     let record_len = T::record_len();
-    //     if val 
-    //     let mut record = T::new();
-    //     record.set_values(vals.as_ref());
-    //     for i in 0..record_len {
-    //         rcrd.standarize_field(i, self.abs_sd[i]);
-    //     }
-    //     record.set_class()
-    // }
+    pub fn predict(&self, mut record: T) -> U {
+        let record_len = T::record_len();
+        // if record_len != vals.len() {
+        //     panic!("vals lenght should be {} instead of {}", record_len, vals.len());
+        // }
+        for i in 0..record_len {
+            record.standarize_field(i, &self.abs_sd[i]);
+        }
+
+        self.data[self.nearest_neighbors(&record, manhattan_dist)[0]].get_class()
+    }
 
     // pub fn cross_validation(training_path: &str, n: usize, prefix: &str) {
     //     let mut precision = 0.0;
