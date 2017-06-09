@@ -6,6 +6,7 @@ pub trait Record {
     fn record_len() -> usize;
     fn data_at(&self, index: usize) -> f32;
     fn standarize_field(&mut self, index: usize, asd_median: &(f32, f32));
+    fn values(&self) -> Vec<f32>;
 }
 
 #[derive(Debug, RustcDecodable)]
@@ -26,6 +27,10 @@ impl Record for MpgRecord {
     fn standarize_field(&mut self, index: usize, asd_median: &(f32, f32)) {
         self.values[index] = (self.values[index] - asd_median.1) / asd_median.0;
     }
+
+    fn values(&self) -> Vec<f32> {
+        self.values.to_vec()
+    }
 }
 
 #[derive(Debug, RustcDecodable)]
@@ -45,6 +50,10 @@ impl Record for IrisRecord {
 
     fn standarize_field(&mut self, index: usize, asd_median: &(f32, f32)) {
         self.values[index] = (self.values[index] - asd_median.1) / asd_median.0;
+    }
+
+    fn values(&self) -> Vec<f32> {
+        self.values.to_vec()
     }
 }
 
@@ -104,10 +113,7 @@ impl<T> Database<T>
         let mut i = 0;
         for feat_vec in mult_feat_vec.iter() {
             let asd_median_tup = abs_standard_deviation(&feat_vec);
-            println!("\t{}> asd: {}\tmedian: {}",
-                     i,
-                     asd_median_tup.0,
-                     asd_median_tup.1);
+            println!("\t{}> asd: {}\tmedian: {}", i, asd_median_tup.0, asd_median_tup.1);
 
             for rcrd in self.data.iter_mut() {
                 rcrd.standarize_field(i, &asd_median_tup);
@@ -116,6 +122,30 @@ impl<T> Database<T>
             self.abs_sd.push(asd_median_tup);
             i += 1;
         }
+    }
+
+    fn nearest_neighbors(&self, rcrd: &T, func: fn(&Vec<f32>, &Vec<f32>) -> f32) -> Vec<usize> {
+        let mut distances: Vec<(f32, usize)> = Vec::new();
+        let mut i = 0;
+        for record in self.data.iter() {
+            distances.push((func(&rcrd.values(), &record.values()), i));
+            i += 1;
+        }
+        distances.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+
+        let indexes = distances.into_iter().map(|x| x.1).collect();
+        indexes
+    }
+
+    pub fn predict(&self, vals: Vec<f32>) -> T {
+        let record_len = T::record_len();
+        if val 
+        let mut record = T::new();
+        record.set_values(vals.as_ref());
+        for i in 0..record_len {
+            rcrd.standarize_field(i, self.abs_sd[i]);
+        }
+        record.set_class()
     }
 
     // pub fn cross_validation(training_path: &str, n: usize, prefix: &str) {
