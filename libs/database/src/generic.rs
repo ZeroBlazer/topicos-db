@@ -2,20 +2,21 @@ use quick_csv::Csv;
 use rustc_serialize;
 use utilities::abs_standard_deviation;
 
-pub trait Record {
+pub trait Record<U> {
     fn record_len() -> usize;
     fn data_at(&self, index: usize) -> f32;
     fn standarize_field(&mut self, index: usize, asd_median: &(f32, f32));
     fn values(&self) -> Vec<f32>;
+    fn get_class(&self) -> &U;
 }
 
 #[derive(Debug, RustcDecodable)]
-pub struct MpgRecord {
-    class: u32,
+pub struct MpgRecord<U> {
+    class: U,
     values: [f32; 5],
 }
 
-impl Record for MpgRecord {
+impl<U> Record<U> for MpgRecord<U> {
     fn record_len() -> usize {
         5
     }
@@ -31,15 +32,19 @@ impl Record for MpgRecord {
     fn values(&self) -> Vec<f32> {
         self.values.to_vec()
     }
+
+    fn get_class(&self) -> &U {
+        self.class
+    }
 }
 
 #[derive(Debug, RustcDecodable)]
-pub struct IrisRecord {
-    class: String,
+pub struct IrisRecord<U> {
+    class: U,
     values: [f32; 4],
 }
 
-impl Record for IrisRecord {
+impl<U> Record<U> for IrisRecord<U> {
     fn record_len() -> usize {
         4
     }
@@ -55,29 +60,35 @@ impl Record for IrisRecord {
     fn values(&self) -> Vec<f32> {
         self.values.to_vec()
     }
+
+    fn get_class(&self) -> &U {
+        self.class
+    }
 }
 
 #[derive(Debug)]
-pub struct Database<T> {
-    data: Vec<T>,
+pub struct Database<T, U>
+    where T: Record<U>
+{
+    data: Vec<T<U>>,
     abs_sd: Vec<(f32, f32)>,
 }
 
-impl<T> Database<T>
-    where T: rustc_serialize::Decodable + ::std::fmt::Debug + Record
+impl<T, U> Database<T, U>
+    where T: rustc_serialize::Decodable + ::std::fmt::Debug + Record<U>
 {
-    pub fn new() -> Database<T> {
+    pub fn new() -> Database<T, U> {
         Database {
             data: Vec::new(),
             abs_sd: Vec::new(),
         }
     }
 
-    pub fn from_file(path: &str) -> Database<T> {
+    pub fn from_file(path: &str) -> Database<T, U> {
         let rdr = Csv::from_file(path).unwrap().has_header(true);
-        let mut data: Vec<T> = Vec::new();
+        let mut data: Vec<T<U>> = Vec::new();
         for row in rdr.into_iter() {
-            match row.unwrap().decode::<T>() {
+            match row.unwrap().decode::<T<U>>() {
                 Ok(cols) => data.push(cols),
                 Err(error) => println!("{}", error),
             }
@@ -92,7 +103,7 @@ impl<T> Database<T>
     pub fn add_file(&mut self, path: &str) {
         let rdr = Csv::from_file(path).unwrap();
         for row in rdr.into_iter() {
-            match row.unwrap().decode::<T>() {
+            match row.unwrap().decode::<T<U>>() {
                 Ok(cols) => self.data.push(cols),
                 Err(error) => println!("{}", error),
             }
@@ -101,7 +112,7 @@ impl<T> Database<T>
 
     pub fn standarize(&mut self) {
         println!("Standarizing DB...");
-        let record_len = T::record_len();
+        let record_len = T::<U>::record_len();
         let mut mult_feat_vec = vec![Vec::<f32>::new(); record_len];
 
         for rcrd in self.data.iter() {
@@ -137,16 +148,16 @@ impl<T> Database<T>
         indexes
     }
 
-    pub fn predict(&self, vals: Vec<f32>) -> T {
-        let record_len = T::record_len();
-        if val 
-        let mut record = T::new();
-        record.set_values(vals.as_ref());
-        for i in 0..record_len {
-            rcrd.standarize_field(i, self.abs_sd[i]);
-        }
-        record.set_class()
-    }
+    // pub fn predict(&self, vals: Vec<f32>) -> T<U> {
+    //     let record_len = T::record_len();
+    //     if val 
+    //     let mut record = T::new();
+    //     record.set_values(vals.as_ref());
+    //     for i in 0..record_len {
+    //         rcrd.standarize_field(i, self.abs_sd[i]);
+    //     }
+    //     record.set_class()
+    // }
 
     // pub fn cross_validation(training_path: &str, n: usize, prefix: &str) {
     //     let mut precision = 0.0;
