@@ -9,3 +9,4 @@ csv = "0.14"
 utilities = { path = "../utilities/" }
 distance = { path = "../distance/" }
 rand = "*"
+quick-csv = "0.1.6"

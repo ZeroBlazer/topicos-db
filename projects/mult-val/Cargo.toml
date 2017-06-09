@@ -1,0 +1,7 @@
+[package]
+name = "mult-val"
+version = "0.1.0"
+authors = ["Elías Puma <elpumitaelias@gmail.com>"]
+
+[dependencies]
+database = { path = "../../libs/database/" }

@@ -3,11 +3,12 @@ extern crate csv;
 extern crate utilities;
 extern crate distance;
 extern crate rand;
+extern crate quick_csv;
 
 use std::collections::HashMap;
 use utilities::abs_standard_deviation;
 use distance::{manhattan_dist, euclidian_dist, pearson_coef};
-use rand::Rng;
+// use rand::Rng;
 
 /******************** Athletes DB ********************/
 #[derive(Debug)]
@@ -456,3 +457,4 @@ impl MpgDatabase {
     }
 }
 /*******************************************************/
+pub mod generic;
