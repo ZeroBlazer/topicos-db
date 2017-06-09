@@ -1,13 +1,17 @@
-use quick_csv::Csv;
 use rustc_serialize;
-use utilities::abs_standard_deviation;
-use std::marker::PhantomData;
+use quick_csv::Csv;
 use std::clone::Clone;
 use std::cmp::Eq;
+use std::collections::HashMap;
+use std::collections::hash_map::Entry::{Occupied, Vacant};
+use std::fmt::Debug;
+use std::marker::PhantomData;
+use std::hash::Hash;
 use distance::manhattan_dist;
+use utilities::abs_standard_deviation;
 
 pub trait Record<U>
-    where U: Clone + Eq
+    where U: Clone + Eq + Debug + Hash
 {
     fn record_len() -> usize;
     fn data_at(&self, index: usize) -> f32;
@@ -24,7 +28,7 @@ pub struct MpgRecord<U> {
 }
 
 impl<U> Record<U> for MpgRecord<U>
-    where U: Clone + Eq
+    where U: Clone + Eq + Debug + Hash
 {
     fn record_len() -> usize {
         5
@@ -60,7 +64,7 @@ pub struct IrisRecord<U> {
 }
 
 impl<U> Record<U> for IrisRecord<U>
-    where U: Clone + Eq
+    where U: Clone + Eq + Debug + Hash
 {
     fn record_len() -> usize {
         4
@@ -92,7 +96,7 @@ impl<U> Record<U> for IrisRecord<U>
 #[derive(Debug)]
 pub struct Database<T, U>
     where T: Record<U>,
-          U: Clone + Eq
+          U: Clone + Eq + Debug + Hash
 {
     data: Vec<T>,
     abs_sd: Vec<(f32, f32)>,
@@ -101,7 +105,7 @@ pub struct Database<T, U>
 
 impl<T, U> Database<T, U>
     where T: rustc_serialize::Decodable + ::std::fmt::Debug + Record<U>,
-          U: Clone + Eq
+          U: Clone + Eq + Debug + Hash
 {
     pub fn new() -> Database<T, U> {
         Database {
@@ -189,6 +193,19 @@ impl<T, U> Database<T, U>
         self.data[self.nearest_neighbors(&record, manhattan_dist)[0]].get_class()
     }
 
+    pub fn count_classes(&self) -> HashMap<U, usize> {
+        let mut counts: HashMap<U, usize> = HashMap::new();
+        for record in self.data.iter() {
+            let counter = counts.entry(record.get_class()).or_insert(0);
+            *counter += 1;
+        }
+        counts
+    }
+
+    pub fn segment(&self, n: usize, prefix: &str) {
+        let counts = self.count_classes();
+    }
+
     pub fn cross_validation(training_path: &str, n: usize, prefix: &str) {
         // for j in 1..n + 1 {} SEGMENT DB
         let mut precision = 0.0;
@@ -203,40 +220,59 @@ impl<T, U> Database<T, U>
                                         .as_ref());
                 }
             }
-
             db.standarize();
+
             let path = format!("../../data/cross-validation/{}-{number:>0width$}",
                                prefix,
                                number = j,
                                width = 2);
-            let rdr = Csv::from_file(path).unwrap();
+            let mut test_db = Database::<T, U>::from_file(path.as_ref());
+            let mut confusion_counts: HashMap<U, HashMap<U, usize>> = HashMap::new();
 
             let mut n_correct = 0;
             let mut n_incorrect = 0;
             let mut count = 0;
 
-            for row in rdr.into_iter() {
-                match row.unwrap().decode::<T>() {
-                    Ok(mut rcrd) => {
-                        db.standarize_record(&mut rcrd);
-                        let pred = db.predict(&rcrd);
-                        if pred == rcrd.get_class() {
-                            n_correct += 1;
-                        } else {
-                            n_incorrect += 1;
-                        }
-                        count += 1;
-                    }
-                    Err(error) => println!("{}", error),
-                }
-            }
-            println!("Correct: {}%\nIncorrect: {}%\n",
-                     n_correct as f32 * 100.0 / count as f32,
-                     n_incorrect as f32 * 100.0 / count as f32);
+            for mut record in test_db.data.iter_mut() {
+                db.standarize_record(&mut record);
+                let class = record.get_class();
+                let pred = db.predict(&record);
 
+                if class == pred {
+                    n_correct += 1;
+                } else {
+                    n_incorrect += 1;
+                }
+
+                match confusion_counts.entry(class) {
+                    Vacant(entry) => {
+                        let mut class_count = HashMap::new();
+                        class_count.insert(pred, 1);
+                        entry.insert(class_count);
+                    }
+                    Occupied(mut entry) => {
+                        let counter = entry.get_mut().entry(pred).or_insert(1);
+                        *counter += 1;
+                    }
+                }
+
+                count += 1;
+            }
+
+            println!("\nTestings for: {}\n\
+                      Accuracy: {}%\n\
+                      Confusion Matrix===========", path, n_correct as f32 * 100.0 / count as f32);
+            for (act_class, counts) in &confusion_counts {
+                print!("  {:?} >", act_class);
+                for (pred_class, count) in counts {
+                    print!("\t{:?}: {}", pred_class, count);
+                }
+                println!("");
+            }
+            println!("===========================\n");
             precision += n_correct as f32 * 100.0 / count as f32;
         }
         precision /= n as f32;
-        println!("Avg pres: {}%", precision);
+        println!("Avg accuracy: {}%", precision);
     }
 }
