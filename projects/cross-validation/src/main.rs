@@ -4,8 +4,8 @@ extern crate database;
 use database::{AthlDatabase, MpgDatabase};
 
 fn main() {
-    AthlDatabase::test("../../data/athletesTrainingSet.txt", "../../data/athletesTestSet.txt");
-    MpgDatabase::test("../../data/mpgTrainingSet.txt", "../../data/mpgTestSet.txt", true);
+    // AthlDatabase::test("../../data/athletesTrainingSet.txt", "../../data/athletesTestSet.txt");
+    // MpgDatabase::test("../../data/mpgTrainingSet.txt", "../../data/mpgTestSet.txt", true);
 
     MpgDatabase::cross_validation("../../data/mpgTrainingSet.txt", 10, "mpgData");
     // println!("Pred => {:?}", db.predict(70.0, 170.0));

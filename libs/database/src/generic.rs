@@ -1,12 +1,13 @@
 use quick_csv::Csv;
 use rustc_serialize;
 use utilities::abs_standard_deviation;
-use ::std::marker::PhantomData;
-use ::std::clone::Clone;
+use std::marker::PhantomData;
+use std::clone::Clone;
+use std::cmp::Eq;
 use distance::manhattan_dist;
 
 pub trait Record<U>
-    where U: Clone
+    where U: Clone + Eq
 {
     fn record_len() -> usize;
     fn data_at(&self, index: usize) -> f32;
@@ -23,7 +24,7 @@ pub struct MpgRecord<U> {
 }
 
 impl<U> Record<U> for MpgRecord<U>
-    where U: Clone
+    where U: Clone + Eq
 {
     fn record_len() -> usize {
         5
@@ -58,8 +59,8 @@ pub struct IrisRecord<U> {
     values: [f32; 4],
 }
 
-impl<U> Record<U> for IrisRecord<U> 
-    where U: Clone
+impl<U> Record<U> for IrisRecord<U>
+    where U: Clone + Eq
 {
     fn record_len() -> usize {
         4
@@ -91,7 +92,7 @@ impl<U> Record<U> for IrisRecord<U>
 #[derive(Debug)]
 pub struct Database<T, U>
     where T: Record<U>,
-          U: Clone
+          U: Clone + Eq
 {
     data: Vec<T>,
     abs_sd: Vec<(f32, f32)>,
@@ -100,13 +101,13 @@ pub struct Database<T, U>
 
 impl<T, U> Database<T, U>
     where T: rustc_serialize::Decodable + ::std::fmt::Debug + Record<U>,
-          U: Clone
+          U: Clone + Eq
 {
     pub fn new() -> Database<T, U> {
         Database {
             data: Vec::new(),
             abs_sd: Vec::new(),
-            phantom: PhantomData
+            phantom: PhantomData,
         }
     }
 
@@ -123,7 +124,7 @@ impl<T, U> Database<T, U>
         Database {
             data: data,
             abs_sd: Vec::new(),
-            phantom: PhantomData
+            phantom: PhantomData,
         }
     }
 
@@ -151,7 +152,10 @@ impl<T, U> Database<T, U>
         let mut i = 0;
         for feat_vec in mult_feat_vec.iter() {
             let asd_median_tup = abs_standard_deviation(&feat_vec);
-            println!("\t{}> asd: {}\tmedian: {}", i, asd_median_tup.0, asd_median_tup.1);
+            println!("\t{}> asd: {}\tmedian: {}",
+                     i,
+                     asd_median_tup.0,
+                     asd_median_tup.1);
 
             for rcrd in self.data.iter_mut() {
                 rcrd.standarize_field(i, &asd_median_tup);
@@ -175,73 +179,64 @@ impl<T, U> Database<T, U>
         indexes
     }
 
-    pub fn predict(&self, mut record: T) -> U {
-        let record_len = T::record_len();
-        // if record_len != vals.len() {
-        //     panic!("vals lenght should be {} instead of {}", record_len, vals.len());
-        // }
-        for i in 0..record_len {
+    pub fn standarize_record(&self, record: &mut T) {
+        for i in 0..T::record_len() {
             record.standarize_field(i, &self.abs_sd[i]);
         }
+    }
 
+    pub fn predict(&self, record: &T) -> U {
         self.data[self.nearest_neighbors(&record, manhattan_dist)[0]].get_class()
     }
 
-    // pub fn cross_validation(training_path: &str, n: usize, prefix: &str) {
-    //     let mut precision = 0.0;
+    pub fn cross_validation(training_path: &str, n: usize, prefix: &str) {
+        // for j in 1..n + 1 {} SEGMENT DB
+        let mut precision = 0.0;
+        for j in 1..n + 1 {
+            let mut db = Database::<T, U>::new();
+            for i in 1..n + 1 {
+                if i != j {
+                    db.add_file(format!("../../data/cross-validation/{}-{number:>0width$}",
+                                        prefix,
+                                        number = i,
+                                        width = 2)
+                                        .as_ref());
+                }
+            }
 
-    //     for j in 1..n + 1 {
-    //         let mut db = MpgDatabase::new();
+            db.standarize();
+            let path = format!("../../data/cross-validation/{}-{number:>0width$}",
+                               prefix,
+                               number = j,
+                               width = 2);
+            let rdr = Csv::from_file(path).unwrap();
 
-    //         for i in 1..n + 1 {
-    //             if i != j {
-    //                 let path = format!("../../data/cross-validation/{}-{number:>0width$}",
-    //                                    prefix,
-    //                                    number = i,
-    //                                    width = 2);
-    //                 db.add_file(path.as_ref());
-    //             }
-    //         }
+            let mut n_correct = 0;
+            let mut n_incorrect = 0;
+            let mut count = 0;
 
-    //         db.standarize();
-    //         let path = format!("../../data/cross-validation/{}-{number:>0width$}",
-    //                            prefix,
-    //                            number = j,
-    //                            width = 2);
-    //         let mut rdr = csv::Reader::from_file(path)
-    //             .unwrap()
-    //             .delimiter(b'\t')
-    //             .has_headers(false);
+            for row in rdr.into_iter() {
+                match row.unwrap().decode::<T>() {
+                    Ok(mut rcrd) => {
+                        db.standarize_record(&mut rcrd);
+                        let pred = db.predict(&rcrd);
+                        if pred == rcrd.get_class() {
+                            n_correct += 1;
+                        } else {
+                            n_incorrect += 1;
+                        }
+                        count += 1;
+                    }
+                    Err(error) => println!("{}", error),
+                }
+            }
+            println!("Correct: {}%\nIncorrect: {}%\n",
+                     n_correct as f32 * 100.0 / count as f32,
+                     n_incorrect as f32 * 100.0 / count as f32);
 
-    //         let mut n_correct = 0;
-    //         let mut n_incorrect = 0;
-    //         let mut count = 0;
-    //         for record in rdr.decode() {
-    //             let mut rcrd: (MpgRecord, String) = record.unwrap();
-    //             let pred = db.predict(rcrd.0.cylinders,
-    //                                   rcrd.0.ci,
-    //                                   rcrd.0.hp,
-    //                                   rcrd.0.weight,
-    //                                   rcrd.0.secs);
-
-    //             db.standarize_record(&mut rcrd.0);
-
-    //             if rcrd.0.mpg == pred.mpg {
-    //                 n_correct += 1;
-    //             } else {
-    //                 n_incorrect += 1;
-    //             }
-    //             count += 1;
-    //         }
-
-    //         println!("Correct: {}%\nIncorrect: {}%\n",
-    //                  n_correct as f32 * 100.0 / count as f32,
-    //                  n_incorrect as f32 * 100.0 / count as f32);
-
-    //         presition += n_correct as f32 * 100.0 / count as f32;
-    //     }
-
-    //     presition /= n as f32;
-    //     println!("Avg pres: {}%", presition);
-    // }
+            precision += n_correct as f32 * 100.0 / count as f32;
+        }
+        precision /= n as f32;
+        println!("Avg pres: {}%", precision);
+    }
 }

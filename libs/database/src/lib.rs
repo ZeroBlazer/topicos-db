@@ -434,7 +434,6 @@ impl MpgDatabase {
                                       rcrd.0.hp,
                                       rcrd.0.weight,
                                       rcrd.0.secs);
-
                 db.standarize_record(&mut rcrd.0);
 
                 if rcrd.0.mpg == pred.mpg {
