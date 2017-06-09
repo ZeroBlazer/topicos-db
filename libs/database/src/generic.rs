@@ -2,15 +2,16 @@ use quick_csv::Csv;
 use rustc_serialize;
 use utilities::abs_standard_deviation;
 
-pub trait Record {
+pub trait Record<U> {
     fn record_len() -> usize;
     fn data_at(&self, index: usize) -> f32;
     fn standarize_field(&mut self, index: usize, asd_median: &(f32, f32));
+    fn get_class(&self) -> U;
 }
 
 #[derive(Debug, RustcDecodable)]
-pub struct MpgRecord {
-    class: u32,
+pub struct MpgRecord<U> {
+    class: U,
     values: [f32; 5],
 }
 
@@ -26,6 +27,8 @@ impl Record for MpgRecord {
     fn standarize_field(&mut self, index: usize, asd_median: &(f32, f32)) {
         self.values[index] = (self.values[index] - asd_median.1) / asd_median.0;
     }
+
+    fn get
 }
 
 #[derive(Debug, RustcDecodable)]
