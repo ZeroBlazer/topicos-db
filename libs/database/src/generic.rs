@@ -1,6 +1,7 @@
 use quick_csv::Csv;
 use rustc_serialize;
 use utilities::abs_standard_deviation;
+use ::std::marker::PhantomData;
 
 pub trait Record<U> {
     fn record_len() -> usize;
@@ -34,7 +35,7 @@ impl<U> Record<U> for MpgRecord<U> {
     }
 
     fn get_class(&self) -> &U {
-        self.class
+        &self.class
     }
 }
 
@@ -62,7 +63,7 @@ impl<U> Record<U> for IrisRecord<U> {
     }
 
     fn get_class(&self) -> &U {
-        self.class
+        &self.class
     }
 }
 
@@ -70,8 +71,9 @@ impl<U> Record<U> for IrisRecord<U> {
 pub struct Database<T, U>
     where T: Record<U>
 {
-    data: Vec<T<U>>,
+    data: Vec<T>,
     abs_sd: Vec<(f32, f32)>,
+    phantom: PhantomData<U>,
 }
 
 impl<T, U> Database<T, U>
@@ -81,14 +83,15 @@ impl<T, U> Database<T, U>
         Database {
             data: Vec::new(),
             abs_sd: Vec::new(),
+            phantom: PhantomData
         }
     }
 
     pub fn from_file(path: &str) -> Database<T, U> {
         let rdr = Csv::from_file(path).unwrap().has_header(true);
-        let mut data: Vec<T<U>> = Vec::new();
+        let mut data: Vec<T> = Vec::new();
         for row in rdr.into_iter() {
-            match row.unwrap().decode::<T<U>>() {
+            match row.unwrap().decode::<T>() {
                 Ok(cols) => data.push(cols),
                 Err(error) => println!("{}", error),
             }
@@ -97,13 +100,14 @@ impl<T, U> Database<T, U>
         Database {
             data: data,
             abs_sd: Vec::new(),
+            phantom: PhantomData
         }
     }
 
     pub fn add_file(&mut self, path: &str) {
         let rdr = Csv::from_file(path).unwrap();
         for row in rdr.into_iter() {
-            match row.unwrap().decode::<T<U>>() {
+            match row.unwrap().decode::<T>() {
                 Ok(cols) => self.data.push(cols),
                 Err(error) => println!("{}", error),
             }
@@ -112,7 +116,7 @@ impl<T, U> Database<T, U>
 
     pub fn standarize(&mut self) {
         println!("Standarizing DB...");
-        let record_len = T::<U>::record_len();
+        let record_len = T::record_len();
         let mut mult_feat_vec = vec![Vec::<f32>::new(); record_len];
 
         for rcrd in self.data.iter() {
