@@ -1,5 +1,6 @@
 use rustc_serialize;
 use quick_csv::Csv;
+use csv;
 use std::clone::Clone;
 use std::cmp::Eq;
 use std::collections::HashMap;
@@ -22,10 +23,21 @@ pub trait Record<U>
     fn get_class(&self) -> U;
 }
 
-#[derive(Debug, RustcDecodable)]
+#[derive(Debug, RustcDecodable, RustcEncodable)]
 pub struct MpgRecord<U> {
     class: U,
     values: [f32; 5],
+}
+
+impl<U> Clone for MpgRecord<U>
+    where U: Clone
+{
+    fn clone(&self) -> MpgRecord<U> {
+        MpgRecord::<U> {
+            class: self.class.clone(),
+            values: self.values.clone()
+        }
+    }
 }
 
 impl<U> Record<U> for MpgRecord<U>
@@ -58,10 +70,21 @@ impl<U> Record<U> for MpgRecord<U>
     }
 }
 
-#[derive(Debug, RustcDecodable)]
+#[derive(Debug, RustcDecodable, RustcEncodable)]
 pub struct IrisRecord<U> {
     class: U,
     values: [f32; 4],
+}
+
+impl<U> Clone for IrisRecord<U> 
+    where U: Clone
+{
+    fn clone(&self) -> IrisRecord<U> {
+        IrisRecord::<U> {
+            class: self.class.clone(),
+            values: self.values.clone()
+        }
+    }
 }
 
 impl<U> Record<U> for IrisRecord<U>
@@ -96,7 +119,7 @@ impl<U> Record<U> for IrisRecord<U>
 
 #[derive(Debug)]
 pub struct Database<T, U>
-    where T: Record<U>,
+    where T: Record<U> + Clone + rustc_serialize::Encodable,
           U: Clone + Eq + Debug + Hash
 {
     data: Vec<T>,
@@ -105,7 +128,7 @@ pub struct Database<T, U>
 }
 
 impl<T, U> Database<T, U>
-    where T: rustc_serialize::Decodable + ::std::fmt::Debug + Record<U>,
+    where T: rustc_serialize::Decodable + ::std::fmt::Debug + Record<U> + Clone + rustc_serialize::Encodable,
           U: Clone + Eq + Debug + Hash
 {
     pub fn new() -> Database<T, U> {
@@ -190,8 +213,23 @@ impl<T, U> Database<T, U>
         }
     }
 
-    pub fn predict_nn(&self, record: &T) -> U {
-        self.data[self.nearest_neighbors(&record, manhattan_dist)[0]].get_class()
+    pub fn predict_nn(&self, record: &T, k: usize) -> U {
+        let mut counts: HashMap<U, usize> = HashMap::new();
+        for i in 0..k {
+            let counter = counts.entry(self.data[self.nearest_neighbors(&record, manhattan_dist)[i]].get_class()).or_insert(0);
+            *counter += 1;
+        }
+        
+        let mut p_class = self.data[self.nearest_neighbors(&record, manhattan_dist)[0]].get_class();
+        let mut gtr_count = 1;
+
+        for (class, count) in &counts {
+            if *count > gtr_count {
+                p_class = class.clone();
+            }
+        }
+
+        p_class
     }
 
     pub fn count_classes(&self) -> HashMap<U, usize> {
@@ -204,13 +242,6 @@ impl<T, U> Database<T, U>
     }
 
     pub fn segment(&self, n: usize, prefix: &str) {
-        let counts = self.count_classes();
-    }
-
-    pub fn cross_validation(training_path: &str, n: usize, prefix: &str) {
-        /*******SEGMENTATION******/
-        {
-            let mut db = Database::<T, U>::from_file(training_path);
             // let class_count = db.count_classes();
             // let mut class_transfers_totals: Vec<HashMap<U, usize>> = vec![Vec::new(); n];
             // let mut class_transfers_count: Vec<HashMap<U, usize>> = vec![HashMap::new(); n];
@@ -221,13 +252,31 @@ impl<T, U> Database<T, U>
             // }
             let mut rng = thread_rng();
             let mut i = 0;
-            for record in db.data.iter() {
-                record_transfers[rng.gen_range(0, 10)].push(i);
+            for record in self.data.iter() {
+                record_transfers[rng.gen_range(0, n)].push(i);
                 i += 1;
             }
+
+            i = 1;
             for item in record_transfers.iter() {
-                println!("{}: {:?}", item.len(), item);
+                let path = format!("../../data/cross-validation/{}-{number:>0width$}",
+                                                             prefix,
+                                                             number = i,
+                                                             width = 2);
+                let str_path: &str = path.as_ref();
+                let mut wtr = csv::Writer::from_file(str_path).unwrap();
+                for record in item {
+                    wtr.encode(self.data[*record].clone());
+                }
+                i += 1;
             }
+    }
+
+    pub fn cross_validation(training_path: &str, n: usize, prefix: &str) {
+        /*******SEGMENTATION******/
+        {
+            let mut db = Database::<T, U>::from_file(training_path);
+            db.segment(n, prefix);
         }
         /*************************/
         let mut precision = 0.0;
@@ -258,7 +307,7 @@ impl<T, U> Database<T, U>
             for mut record in test_db.data.iter_mut() {
                 db.standarize_record(&mut record);
                 let class = record.get_class();
-                let pred = db.predict_nn(&record);
+                let pred = db.predict_nn(&record, 3);
 
                 if class == pred {
                     n_correct += 1;
