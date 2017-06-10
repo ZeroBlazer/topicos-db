@@ -7,6 +7,7 @@ use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::hash::Hash;
+use rand::{thread_rng, Rng};
 use distance::manhattan_dist;
 use utilities::abs_standard_deviation;
 
@@ -189,7 +190,7 @@ impl<T, U> Database<T, U>
         }
     }
 
-    pub fn predict(&self, record: &T) -> U {
+    pub fn predict_nn(&self, record: &T) -> U {
         self.data[self.nearest_neighbors(&record, manhattan_dist)[0]].get_class()
     }
 
@@ -207,7 +208,28 @@ impl<T, U> Database<T, U>
     }
 
     pub fn cross_validation(training_path: &str, n: usize, prefix: &str) {
-        // for j in 1..n + 1 {} SEGMENT DB
+        /*******SEGMENTATION******/
+        {
+            let mut db = Database::<T, U>::from_file(training_path);
+            // let class_count = db.count_classes();
+            // let mut class_transfers_totals: Vec<HashMap<U, usize>> = vec![Vec::new(); n];
+            // let mut class_transfers_count: Vec<HashMap<U, usize>> = vec![HashMap::new(); n];
+            let mut record_transfers: Vec<Vec<usize>> = vec![Vec::new(); n];
+            // for (class, count) in &class_count {
+            //     let num_of_class = count / n;
+                
+            // }
+            let mut rng = thread_rng();
+            let mut i = 0;
+            for record in db.data.iter() {
+                record_transfers[rng.gen_range(0, 10)].push(i);
+                i += 1;
+            }
+            for item in record_transfers.iter() {
+                println!("{}: {:?}", item.len(), item);
+            }
+        }
+        /*************************/
         let mut precision = 0.0;
         for j in 1..n + 1 {
             let mut db = Database::<T, U>::new();
@@ -236,7 +258,7 @@ impl<T, U> Database<T, U>
             for mut record in test_db.data.iter_mut() {
                 db.standarize_record(&mut record);
                 let class = record.get_class();
-                let pred = db.predict(&record);
+                let pred = db.predict_nn(&record);
 
                 if class == pred {
                     n_correct += 1;

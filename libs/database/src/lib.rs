@@ -9,7 +9,6 @@ extern crate rusty_machine as rm;
 use std::collections::HashMap;
 use utilities::abs_standard_deviation;
 use distance::{manhattan_dist, euclidian_dist, pearson_coef};
-// use rand::Rng;
 
 /******************** Athletes DB ********************/
 #[derive(Debug)]
