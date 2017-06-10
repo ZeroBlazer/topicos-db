@@ -1,9 +1,10 @@
 extern crate rustc_serialize;
 extern crate csv;
-extern crate utilities;
-extern crate distance;
 extern crate rand;
 extern crate quick_csv;
+extern crate distance;
+extern crate utilities;
+extern crate rusty_machine as rm;
 
 use std::collections::HashMap;
 use utilities::abs_standard_deviation;
