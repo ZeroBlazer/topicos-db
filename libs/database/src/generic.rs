@@ -6,6 +6,7 @@ use std::cmp::Eq;
 use std::collections::HashMap;
 use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::fmt::Debug;
+use rustc_serialize::{Decodable, Encodable};
 use std::marker::PhantomData;
 use std::hash::Hash;
 use rand::{thread_rng, Rng};
@@ -35,7 +36,7 @@ impl<U> Clone for MpgRecord<U>
     fn clone(&self) -> MpgRecord<U> {
         MpgRecord::<U> {
             class: self.class.clone(),
-            values: self.values.clone()
+            values: self.values.clone(),
         }
     }
 }
@@ -76,13 +77,13 @@ pub struct IrisRecord<U> {
     values: [f32; 4],
 }
 
-impl<U> Clone for IrisRecord<U> 
+impl<U> Clone for IrisRecord<U>
     where U: Clone
 {
     fn clone(&self) -> IrisRecord<U> {
         IrisRecord::<U> {
             class: self.class.clone(),
-            values: self.values.clone()
+            values: self.values.clone(),
         }
     }
 }
@@ -117,9 +118,56 @@ impl<U> Record<U> for IrisRecord<U>
     }
 }
 
+#[derive(Debug, RustcDecodable, RustcEncodable)]
+pub struct PirsonRecord<U> {
+    class: U,
+    values: Vec<f32>,
+}
+
+impl<U> Clone for PirsonRecord<U>
+    where U: Clone
+{
+    fn clone(&self) -> PirsonRecord<U> {
+        PirsonRecord::<U> {
+            class: self.class.clone(),
+            values: self.values.clone(),
+        }
+    }
+}
+
+impl<U> Record<U> for PirsonRecord<U>
+    where U: Clone + Eq + Debug + Hash
+{
+    fn record_len() -> usize {
+        5
+    }
+
+    fn data_at(&self, index: usize) -> f32 {
+        self.values[index]
+    }
+
+    fn standarize_field(&mut self, index: usize, asd_median: &(f32, f32)) {
+        self.values[index] = (self.values[index] - asd_median.1) / asd_median.0;
+    }
+
+    fn values(&self) -> Vec<f32> {
+        self.values.to_vec()
+    }
+
+    fn get_class(&self) -> U {
+        self.class.clone()
+    }
+
+    fn set_values(&mut self, values: Vec<f32>) {
+        for i in 0..self.values.len() {
+            self.values[i] = values[i];
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Database<T, U>
-    where T: Record<U> + Clone + rustc_serialize::Encodable,
+    where T: Record<U> + Clone + Encodable,
           U: Clone + Eq + Debug + Hash
 {
     data: Vec<T>,
@@ -128,7 +176,7 @@ pub struct Database<T, U>
 }
 
 impl<T, U> Database<T, U>
-    where T: rustc_serialize::Decodable + ::std::fmt::Debug + Record<U> + Clone + rustc_serialize::Encodable,
+    where T: Decodable + Debug + Record<U> + Clone + Encodable,
           U: Clone + Eq + Debug + Hash
 {
     pub fn new() -> Database<T, U> {
@@ -216,10 +264,12 @@ impl<T, U> Database<T, U>
     pub fn predict_knn(&self, record: &T, k: usize) -> U {
         let mut counts: HashMap<U, usize> = HashMap::new();
         for i in 0..k {
-            let counter = counts.entry(self.data[self.nearest_neighbors(&record, manhattan_dist)[i]].get_class()).or_insert(0);
+            let counter = counts
+                .entry(self.data[self.nearest_neighbors(&record, manhattan_dist)[i]].get_class())
+                .or_insert(0);
             *counter += 1;
         }
-        
+
         let mut p_class = self.data[self.nearest_neighbors(&record, manhattan_dist)[0]].get_class();
         let mut gtr_count = 1;
 
@@ -250,32 +300,32 @@ impl<T, U> Database<T, U>
     }
 
     pub fn segment(&self, n: usize, prefix: &str) {
-            let mut record_transfers: Vec<Vec<usize>> = vec![Vec::new(); n];
-            let mut rng = thread_rng();
-            let mut i = 0;
-            for record in self.data.iter() {
-                record_transfers[rng.gen_range(0, n)].push(i);
-                i += 1;
-            }
+        let mut record_transfers: Vec<Vec<usize>> = vec![Vec::new(); n];
+        let mut rng = thread_rng();
+        let mut i = 0;
+        for record in self.data.iter() {
+            record_transfers[rng.gen_range(0, n)].push(i);
+            i += 1;
+        }
 
-            i = 1;
-            for item in record_transfers.iter() {
-                let path = format!("../../data/cross-validation/{}-{number:>0width$}",
-                                                             prefix,
-                                                             number = i,
-                                                             width = 2);
-                let str_path: &str = path.as_ref();
-                let mut wtr = csv::Writer::from_file(str_path).unwrap();
-                for record in item {
-                    wtr.encode(self.data[*record].clone());
-                }
-                i += 1;
+        i = 1;
+        for item in record_transfers.iter() {
+            let path = format!("../../data/cross-validation/{}-{number:>0width$}",
+                               prefix,
+                               number = i,
+                               width = 2);
+            let str_path: &str = path.as_ref();
+            let mut wtr = csv::Writer::from_file(str_path).unwrap();
+            for record in item {
+                wtr.encode(self.data[*record].clone());
             }
+            i += 1;
+        }
     }
 
-    pub fn cross_validation(training_path: &str, n: usize, prefix: &str) {
+    pub fn cross_validation(training_path: &str, n: usize, prefix: &str, segment: bool) {
         /*******SEGMENTATION******/
-        {
+        if segment {
             let mut db = Database::<T, U>::from_file(training_path);
             db.segment(n, prefix);
         }
@@ -333,7 +383,9 @@ impl<T, U> Database<T, U>
 
             println!("\nTestings for: {}\n\
                       Accuracy: {}%\n\
-                      Confusion Matrix===========", path, n_correct as f32 * 100.0 / count as f32);
+                      Confusion Matrix===========",
+                     path,
+                     n_correct as f32 * 100.0 / count as f32);
             for (act_class, counts) in &confusion_counts {
                 print!("  {:?} >", act_class);
                 for (pred_class, count) in counts {
