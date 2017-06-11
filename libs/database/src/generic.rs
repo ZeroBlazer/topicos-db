@@ -118,6 +118,53 @@ impl<U> Record<U> for IrisRecord<U>
     }
 }
 
+#[derive(Debug, RustcDecodable, RustcEncodable)]
+pub struct PirsonRecord<U> {
+    class: U,
+    values: [f32; 1423],
+}
+
+impl<U> Clone for PirsonRecord<U>
+    where U: Clone
+{
+    fn clone(&self) -> PirsonRecord<U> {
+        PirsonRecord::<U> {
+            class: self.class.clone(),
+            values: self.values.clone(),
+        }
+    }
+}
+
+impl<U> Record<U> for PirsonRecord<U>
+    where U: Clone + Eq + Debug + Hash
+{
+    fn record_len() -> usize {
+        5
+    }
+
+    fn data_at(&self, index: usize) -> f32 {
+        self.values[index]
+    }
+
+    fn standarize_field(&mut self, index: usize, asd_median: &(f32, f32)) {
+        self.values[index] = (self.values[index] - asd_median.1) / asd_median.0;
+    }
+
+    fn values(&self) -> Vec<f32> {
+        self.values.to_vec()
+    }
+
+    fn get_class(&self) -> U {
+        self.class.clone()
+    }
+
+    fn set_values(&mut self, values: Vec<f32>) {
+        for i in 0..self.values.len() {
+            self.values[i] = values[i];
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Database<T, U>
     where T: Record<U> + Clone + Encodable,

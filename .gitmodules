@@ -7,3 +7,6 @@
 [submodule "improved-slope-one/report"]
 	path = projects/improved-slope-one/report
 	url = https://git.overleaf.com/9572327mvxrgnmwfnng
+[submodule "projects/mult-val/report"]
+	path = projects/mult-val/report
+	url = https://git.overleaf.com/9950042mjgdpgchsyfg
