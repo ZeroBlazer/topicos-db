@@ -213,7 +213,7 @@ impl<T, U> Database<T, U>
         }
     }
 
-    pub fn predict_nn(&self, record: &T, k: usize) -> U {
+    pub fn predict_knn(&self, record: &T, k: usize) -> U {
         let mut counts: HashMap<U, usize> = HashMap::new();
         for i in 0..k {
             let counter = counts.entry(self.data[self.nearest_neighbors(&record, manhattan_dist)[i]].get_class()).or_insert(0);
@@ -232,6 +232,14 @@ impl<T, U> Database<T, U>
         p_class
     }
 
+    pub fn predict_nn(&self, record: &T) -> U {
+        unimplemented!()
+    }
+
+    pub fn predict_svm(&self, record: &T) -> U {
+        unimplemented!()
+    }
+
     pub fn count_classes(&self) -> HashMap<U, usize> {
         let mut counts: HashMap<U, usize> = HashMap::new();
         for record in self.data.iter() {
@@ -242,14 +250,7 @@ impl<T, U> Database<T, U>
     }
 
     pub fn segment(&self, n: usize, prefix: &str) {
-            // let class_count = db.count_classes();
-            // let mut class_transfers_totals: Vec<HashMap<U, usize>> = vec![Vec::new(); n];
-            // let mut class_transfers_count: Vec<HashMap<U, usize>> = vec![HashMap::new(); n];
             let mut record_transfers: Vec<Vec<usize>> = vec![Vec::new(); n];
-            // for (class, count) in &class_count {
-            //     let num_of_class = count / n;
-                
-            // }
             let mut rng = thread_rng();
             let mut i = 0;
             for record in self.data.iter() {
@@ -307,7 +308,7 @@ impl<T, U> Database<T, U>
             for mut record in test_db.data.iter_mut() {
                 db.standarize_record(&mut record);
                 let class = record.get_class();
-                let pred = db.predict_nn(&record, 3);
+                let pred = db.predict_knn(&record, 3);
 
                 if class == pred {
                     n_correct += 1;
