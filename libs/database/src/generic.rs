@@ -121,7 +121,7 @@ impl<U> Record<U> for IrisRecord<U>
 #[derive(Debug, RustcDecodable, RustcEncodable)]
 pub struct PirsonRecord<U> {
     class: U,
-    values: [f32; 1423],
+    values: Vec<f32>,
 }
 
 impl<U> Clone for PirsonRecord<U>
@@ -315,9 +315,9 @@ impl<T, U> Database<T, U>
         }
     }
 
-    pub fn cross_validation(training_path: &str, n: usize, prefix: &str) {
+    pub fn cross_validation(training_path: &str, n: usize, prefix: &str, segment: bool) {
         /*******SEGMENTATION******/
-        {
+        if segment {
             let mut db = Database::<T, U>::from_file(training_path);
             db.segment(n, prefix);
         }
