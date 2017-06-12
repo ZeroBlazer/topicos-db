@@ -330,7 +330,7 @@ impl<T, U> Database<T, U>
         let mut class = 0.0;
         for record in self.data.iter() {
             self.classifier.entry(record.get_class()).or_insert(class);
-            class += 0.5;
+            class += 2.0;
         }
     }
 
