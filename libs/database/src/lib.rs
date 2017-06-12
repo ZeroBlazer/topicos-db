@@ -4,7 +4,9 @@ extern crate rand;
 extern crate quick_csv;
 extern crate distance;
 extern crate utilities;
-extern crate rusty_machine as rm;
+extern crate nn;
+extern crate conv;
+// extern crate rusty_machine as rm;
 
 use std::collections::HashMap;
 use utilities::abs_standard_deviation;

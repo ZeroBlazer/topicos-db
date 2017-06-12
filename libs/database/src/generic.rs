@@ -1,6 +1,7 @@
 use rustc_serialize;
 use quick_csv::Csv;
 use csv;
+use nn::{NN, HaltCondition};
 use std::clone::Clone;
 use std::cmp::Eq;
 use std::collections::HashMap;
@@ -12,6 +13,7 @@ use std::hash::Hash;
 use rand::{thread_rng, Rng};
 use distance::manhattan_dist;
 use utilities::abs_standard_deviation;
+use conv::*;
 
 pub trait Record<U>
     where U: Clone + Eq + Debug + Hash
@@ -20,8 +22,11 @@ pub trait Record<U>
     fn data_at(&self, index: usize) -> f32;
     fn standarize_field(&mut self, index: usize, asd_median: &(f32, f32));
     fn values(&self) -> Vec<f32>;
+    fn values_f64(&self) -> Vec<f64>;
     fn set_values(&mut self, Vec<f32>);
     fn get_class(&self) -> U;
+    fn get_class_as_f64(&self) -> f64;
+    // fn get_class_from_f32(&self, class: f32) -> U;
 }
 
 #[derive(Debug, RustcDecodable, RustcEncodable)]
@@ -60,6 +65,10 @@ impl<U> Record<U> for MpgRecord<U>
         self.values.to_vec()
     }
 
+    fn values_f64(&self) -> Vec<f64> {
+        self.values.to_vec().iter().map(|x| *x as f64).collect()
+    }
+
     fn get_class(&self) -> U {
         self.class.clone()
     }
@@ -68,6 +77,10 @@ impl<U> Record<U> for MpgRecord<U>
         for i in 0..self.values.len() {
             self.values[i] = values[i];
         }
+    }
+
+    fn get_class_as_f64(&self) -> f64 {
+        3.14
     }
 }
 
@@ -107,6 +120,10 @@ impl<U> Record<U> for IrisRecord<U>
         self.values.to_vec()
     }
 
+    fn values_f64(&self) -> Vec<f64> {
+        self.values.to_vec().iter().map(|x| *x as f64).collect()
+    }
+
     fn get_class(&self) -> U {
         self.class.clone()
     }
@@ -115,6 +132,10 @@ impl<U> Record<U> for IrisRecord<U>
         for i in 0..self.values.len() {
             self.values[i] = values[i];
         }
+    }
+
+    fn get_class_as_f64(&self) -> f64 {
+        return 0.5
     }
 }
 
@@ -154,6 +175,10 @@ impl<U> Record<U> for PirsonRecord<U>
         self.values.to_vec()
     }
 
+    fn values_f64(&self) -> Vec<f64> {
+        self.values.to_vec().iter().map(|x| *x as f64).collect()
+    }
+
     fn get_class(&self) -> U {
         self.class.clone()
     }
@@ -163,7 +188,20 @@ impl<U> Record<U> for PirsonRecord<U>
             self.values[i] = values[i];
         }
     }
+
+    fn get_class_as_f64(&self) -> f64 {
+        2.16
+    }
 }
+
+#[derive(Debug)]
+pub enum TrainingMethod {
+    NearestNeighbors,
+    NeuralNetwork,
+    SVM,
+}
+
+use self::TrainingMethod::*;
 
 #[derive(Debug)]
 pub struct Database<T, U>
@@ -172,6 +210,7 @@ pub struct Database<T, U>
 {
     data: Vec<T>,
     abs_sd: Vec<(f32, f32)>,
+    classifier: HashMap<U, f64>,
     phantom: PhantomData<U>,
 }
 
@@ -183,7 +222,8 @@ impl<T, U> Database<T, U>
         Database {
             data: Vec::new(),
             abs_sd: Vec::new(),
-            phantom: PhantomData,
+            classifier: HashMap::new(),
+            phantom: PhantomData
         }
     }
 
@@ -200,7 +240,8 @@ impl<T, U> Database<T, U>
         Database {
             data: data,
             abs_sd: Vec::new(),
-            phantom: PhantomData,
+            classifier: HashMap::new(),
+            phantom: PhantomData
         }
     }
 
@@ -282,8 +323,49 @@ impl<T, U> Database<T, U>
         p_class
     }
 
-    pub fn predict_nn(&self, record: &T) -> U {
-        unimplemented!()
+    pub fn classify_as_f64(&mut self) {
+        let mut class = 0.0;
+        for record in self.data.iter() {
+            self.classifier.entry(record.get_class()).or_insert(class);
+            class += 0.5;
+        }
+    }
+
+    pub fn get_class_as_f64(&self, record: &T) -> f64 {
+        *self.classifier.get(&record.get_class()).unwrap()
+    }
+
+    pub fn get_class_from_f64(&self, class_val: f64) -> U {
+        for (class, val) in &self.classifier {
+            if class_val == *val {
+                return class.clone();
+            }
+        }
+        self.data[0].get_class().clone()
+    }
+
+    pub fn predict_nn(&mut self, record: &T) -> U {
+        self.classify_as_f64();
+        let mut values: Vec<(Vec<f64>, Vec<f64>)> = Vec::new();
+
+        for rcrd in self.data.iter() {
+            values.push((rcrd.values_f64(), vec![self.get_class_as_f64(rcrd)]));
+        }
+
+        let mut net = NN::new(&[T::record_len() as u32, 3, 1]);
+
+        net.train(&values)
+           .halt_condition( HaltCondition::Epochs(10000) )
+           .log_interval( Some(100) )
+           .momentum( 0.1 )
+           .rate( 0.3 )
+           .go();
+
+        let pred = net.run(&record.values_f64());
+
+        println!("{:?}", pred);
+
+        self.data[0].get_class()
     }
 
     pub fn predict_svm(&self, record: &T) -> U {
@@ -323,7 +405,7 @@ impl<T, U> Database<T, U>
         }
     }
 
-    pub fn cross_validation(training_path: &str, n: usize, prefix: &str, segment: bool) {
+    pub fn cross_validation(training_path: &str, n: usize, prefix: &str, segment: bool, training: TrainingMethod) {
         /*******SEGMENTATION******/
         if segment {
             let mut db = Database::<T, U>::from_file(training_path);
@@ -358,7 +440,11 @@ impl<T, U> Database<T, U>
             for mut record in test_db.data.iter_mut() {
                 db.standarize_record(&mut record);
                 let class = record.get_class();
-                let pred = db.predict_knn(&record, 3);
+                let pred = match training {
+                    NearestNeighbors => db.predict_knn(&record, 3),
+                    NeuralNetwork => db.predict_nn(&record),
+                    SVM => db.predict_knn(&record, 3)
+                };
 
                 if class == pred {
                     n_correct += 1;
