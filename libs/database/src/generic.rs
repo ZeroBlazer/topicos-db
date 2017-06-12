@@ -211,6 +211,7 @@ pub struct Database<T, U>
     data: Vec<T>,
     abs_sd: Vec<(f32, f32)>,
     classifier: HashMap<U, f64>,
+    net: NN,
     phantom: PhantomData<U>,
 }
 
@@ -223,6 +224,7 @@ impl<T, U> Database<T, U>
             data: Vec::new(),
             abs_sd: Vec::new(),
             classifier: HashMap::new(),
+            net: NN::new(&[T::record_len() as u32, 3, 1]),
             phantom: PhantomData
         }
     }
@@ -241,6 +243,7 @@ impl<T, U> Database<T, U>
             data: data,
             abs_sd: Vec::new(),
             classifier: HashMap::new(),
+            net: NN::new(&[T::record_len() as u32, 3, 1]),
             phantom: PhantomData
         }
     }
@@ -345,27 +348,9 @@ impl<T, U> Database<T, U>
     }
 
     pub fn predict_nn(&mut self, record: &T) -> U {
-        self.classify_as_f64();
-        let mut values: Vec<(Vec<f64>, Vec<f64>)> = Vec::new();
-
-        for rcrd in self.data.iter() {
-            values.push((rcrd.values_f64(), vec![self.get_class_as_f64(rcrd)]));
-        }
-
-        let mut net = NN::new(&[T::record_len() as u32, 3, 1]);
-
-        net.train(&values)
-           .halt_condition( HaltCondition::Epochs(10000) )
-           .log_interval( Some(100) )
-           .momentum( 0.1 )
-           .rate( 0.3 )
-           .go();
-
-        let pred = net.run(&record.values_f64());
-
+        let pred = self.net.run(&record.values_f64());
         println!("{:?}", pred);
-
-        self.data[0].get_class()
+        self.get_class_from_f64(pred[0].round())
     }
 
     pub fn predict_svm(&self, record: &T) -> U {
@@ -436,6 +421,22 @@ impl<T, U> Database<T, U>
             let mut n_correct = 0;
             let mut n_incorrect = 0;
             let mut count = 0;
+
+            if let NeuralNetwork = training {
+                db.classify_as_f64();
+                let mut values: Vec<(Vec<f64>, Vec<f64>)> = Vec::new();
+
+                for rcrd in db.data.iter() {
+                    values.push((rcrd.values_f64(), vec![db.get_class_as_f64(rcrd)]));
+                }
+
+                db.net.train(&values)
+                      .halt_condition( HaltCondition::Epochs(10000) )
+                      .log_interval( Some(100) )
+                      .momentum( 0.1 )
+                      .rate( 0.3 )
+                      .go();
+            }
 
             for mut record in test_db.data.iter_mut() {
                 db.standarize_record(&mut record);
