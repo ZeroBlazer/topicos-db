@@ -431,10 +431,10 @@ impl<T, U> Database<T, U>
                 }
 
                 db.net.train(&values)
-                      .halt_condition( HaltCondition::Epochs(10000) )
-                      .log_interval( Some(100) )
+                      .halt_condition( HaltCondition::Epochs(100000) )
+                      .log_interval( Some(5000) )
                       .momentum( 0.1 )
-                      .rate( 0.3 )
+                      .rate( 9.0 )
                       .go();
             }
 
