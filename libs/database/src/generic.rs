@@ -11,7 +11,7 @@ use rustc_serialize::{Decodable, Encodable};
 use std::marker::PhantomData;
 use std::hash::Hash;
 use rand::{thread_rng, Rng};
-use distance::manhattan_dist;
+use distance::{manhattan_dist, cosine_dist, euclidian_dist};
 use utilities::abs_standard_deviation;
 
 use rm::learning::svm::SVM;
@@ -69,7 +69,11 @@ impl<U> Record<U> for MpgRecord<U>
     }
 
     fn values_f64(&self) -> Vec<f64> {
-        self.values.to_vec().iter().map(|x| *x as f64).collect()
+        self.values
+            .to_vec()
+            .iter()
+            .map(|x| *x as f64)
+            .collect()
     }
 
     fn get_class(&self) -> U {
@@ -120,7 +124,11 @@ impl<U> Record<U> for IrisRecord<U>
     }
 
     fn values_f64(&self) -> Vec<f64> {
-        self.values.to_vec().iter().map(|x| *x as f64).collect()
+        self.values
+            .to_vec()
+            .iter()
+            .map(|x| *x as f64)
+            .collect()
     }
 
     fn get_class(&self) -> U {
@@ -155,7 +163,7 @@ impl<U> Record<U> for PirsonRecord<U>
     where U: Clone + Eq + Debug + Hash
 {
     fn record_len() -> usize {
-        5
+        1423
     }
 
     fn data_at(&self, index: usize) -> f32 {
@@ -171,7 +179,11 @@ impl<U> Record<U> for PirsonRecord<U>
     }
 
     fn values_f64(&self) -> Vec<f64> {
-        self.values.to_vec().iter().map(|x| *x as f64).collect()
+        self.values
+            .to_vec()
+            .iter()
+            .map(|x| *x as f64)
+            .collect()
     }
 
     fn get_class(&self) -> U {
@@ -203,6 +215,7 @@ pub struct Database<T, U>
     abs_sd: Vec<(f32, f32)>,
     classifier: HashMap<U, usize>,
     net: NN,
+    // svm_mod: SVM,
     phantom: PhantomData<U>,
 }
 
@@ -216,7 +229,8 @@ impl<T, U> Database<T, U>
             abs_sd: Vec::new(),
             classifier: HashMap::new(),
             net: NN::new(&[T::record_len() as u32, 10, 9]),
-            phantom: PhantomData
+            // svm_mod: SVM::default(),
+            phantom: PhantomData,
         }
     }
 
@@ -235,7 +249,8 @@ impl<T, U> Database<T, U>
             abs_sd: Vec::new(),
             classifier: HashMap::new(),
             net: NN::new(&[T::record_len() as u32, 10, 9]),
-            phantom: PhantomData
+            // svm_mod: SVM::default(),
+            phantom: PhantomData,
         }
     }
 
@@ -300,12 +315,12 @@ impl<T, U> Database<T, U>
         let mut counts: HashMap<U, usize> = HashMap::new();
         for i in 0..k {
             let counter = counts
-                .entry(self.data[self.nearest_neighbors(&record, manhattan_dist)[i]].get_class())
+                .entry(self.data[self.nearest_neighbors(&record, euclidian_dist)[i]].get_class())
                 .or_insert(0);
             *counter += 1;
         }
 
-        let mut p_class = self.data[self.nearest_neighbors(&record, manhattan_dist)[0]].get_class();
+        let mut p_class = self.data[self.nearest_neighbors(&record, euclidian_dist)[0]].get_class();
         let mut gtr_count = 1;
 
         for (class, count) in &counts {
@@ -393,7 +408,11 @@ impl<T, U> Database<T, U>
         }
     }
 
-    pub fn cross_validation(training_path: &str, n: usize, prefix: &str, segment: bool, training: TrainingMethod) {
+    pub fn cross_validation(training_path: &str,
+                            n: usize,
+                            prefix: &str,
+                            segment: bool,
+                            training: TrainingMethod) {
         /*******SEGMENTATION******/
         if segment {
             let mut db = Database::<T, U>::from_file(training_path);
@@ -401,6 +420,7 @@ impl<T, U> Database<T, U>
         }
         /*************************/
         let mut precision = 0.0;
+        let mut prec_vec = Vec::new();
         for j in 1..n + 1 {
             let mut db = Database::<T, U>::new();
             for i in 1..n + 1 {
@@ -432,16 +452,26 @@ impl<T, U> Database<T, U>
                     let mut class = vec![0.0; 9];
                     // println!("Here!: {}", db.get_class_index(rcrd));
                     class[db.get_class_index(rcrd)] = 1.0;
+                    // println!("{} vs {}", rcrd.values_f64().len(), T::record_len());
                     values.push((rcrd.values_f64(), class));
                 }
                 // println!("Exited");
 
-                db.net.train(&values)
-                      .halt_condition( HaltCondition::Epochs(100000) )
-                      .log_interval( Some(5000) )
-                      .momentum( 0.1 )
-                      .rate( 9.0 )
-                      .go();
+                db.net
+                    .train(&values)
+                    .halt_condition(HaltCondition::Epochs(100000))
+                    .log_interval(Some(5000))
+                    .momentum(0.1)
+                    .rate(9.0)
+                    .go();
+            }
+
+            if let SVM = training {
+                // let inputs = Matrix::new(T::record_len(), db.data.len(), vec![1.0,3.0,5.0,7.0]);
+                // let targets = Vector::new(vec![-1.,-1.,1.,1.]);
+
+                // // Train the model
+                // self.svm_mod.train(&inputs, &targets).unwrap();
             }
 
             for mut record in test_db.data.iter_mut() {
@@ -450,7 +480,7 @@ impl<T, U> Database<T, U>
                 let pred = match training {
                     NearestNeighbors => db.predict_knn(&record, 3),
                     NeuralNetwork => db.predict_nn(&record),
-                    SVM => db.predict_knn(&record, 3)
+                    SVM => db.predict_knn(&record, 3),
                 };
 
                 if class == pred {
@@ -488,8 +518,10 @@ impl<T, U> Database<T, U>
             }
             println!("===========================\n");
             precision += n_correct as f32 * 100.0 / count as f32;
+            prec_vec.push(n_correct as f32 * 100.0 / count as f32);
         }
         precision /= n as f32;
+        println!("{:?}", prec_vec);
         println!("Avg accuracy: {}%", precision);
     }
 }
