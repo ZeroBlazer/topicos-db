@@ -11,4 +11,4 @@ distance = { path = "../distance/" }
 rand = "*"
 quick-csv = "0.1.6"
 nn = "0.1.6"
-conv = "0.3.3"
+rusty-machine = "0.5.4"

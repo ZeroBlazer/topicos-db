@@ -13,7 +13,12 @@ use std::hash::Hash;
 use rand::{thread_rng, Rng};
 use distance::manhattan_dist;
 use utilities::abs_standard_deviation;
-use conv::*;
+
+use rm::learning::svm::SVM;
+use rm::learning::SupModel;
+use rm::learning::toolkit::kernel::HyperTan;
+use rm::linalg::Matrix;
+use rm::linalg::Vector;
 
 pub trait Record<U>
     where U: Clone + Eq + Debug + Hash
@@ -25,8 +30,6 @@ pub trait Record<U>
     fn values_f64(&self) -> Vec<f64>;
     fn set_values(&mut self, Vec<f32>);
     fn get_class(&self) -> U;
-    fn get_class_as_f64(&self) -> f64;
-    // fn get_class_from_f32(&self, class: f32) -> U;
 }
 
 #[derive(Debug, RustcDecodable, RustcEncodable)]
@@ -77,10 +80,6 @@ impl<U> Record<U> for MpgRecord<U>
         for i in 0..self.values.len() {
             self.values[i] = values[i];
         }
-    }
-
-    fn get_class_as_f64(&self) -> f64 {
-        3.14
     }
 }
 
@@ -133,10 +132,6 @@ impl<U> Record<U> for IrisRecord<U>
             self.values[i] = values[i];
         }
     }
-
-    fn get_class_as_f64(&self) -> f64 {
-        return 0.5
-    }
 }
 
 #[derive(Debug, RustcDecodable, RustcEncodable)]
@@ -187,10 +182,6 @@ impl<U> Record<U> for PirsonRecord<U>
         for i in 0..self.values.len() {
             self.values[i] = values[i];
         }
-    }
-
-    fn get_class_as_f64(&self) -> f64 {
-        2.16
     }
 }
 
