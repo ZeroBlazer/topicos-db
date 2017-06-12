@@ -210,7 +210,7 @@ pub struct Database<T, U>
 {
     data: Vec<T>,
     abs_sd: Vec<(f32, f32)>,
-    classifier: HashMap<U, f64>,
+    classifier: HashMap<U, usize>,
     net: NN,
     phantom: PhantomData<U>,
 }
@@ -224,7 +224,7 @@ impl<T, U> Database<T, U>
             data: Vec::new(),
             abs_sd: Vec::new(),
             classifier: HashMap::new(),
-            net: NN::new(&[T::record_len() as u32, 3, 1]),
+            net: NN::new(&[T::record_len() as u32, 10, 9]),
             phantom: PhantomData
         }
     }
@@ -243,7 +243,7 @@ impl<T, U> Database<T, U>
             data: data,
             abs_sd: Vec::new(),
             classifier: HashMap::new(),
-            net: NN::new(&[T::record_len() as u32, 3, 1]),
+            net: NN::new(&[T::record_len() as u32, 10, 9]),
             phantom: PhantomData
         }
     }
@@ -326,19 +326,24 @@ impl<T, U> Database<T, U>
         p_class
     }
 
-    pub fn classify_as_f64(&mut self) {
-        let mut class = 0.0;
+    pub fn classify(&mut self) {
+        let mut class = 0;
         for record in self.data.iter() {
-            self.classifier.entry(record.get_class()).or_insert(class);
-            class += 2.0;
+            match self.classifier.entry(record.get_class()) {
+                Vacant(entry) => {
+                    entry.insert(class);
+                    class += 1;
+                }
+                _ => {}
+            }
         }
     }
 
-    pub fn get_class_as_f64(&self, record: &T) -> f64 {
+    pub fn get_class_index(&self, record: &T) -> usize {
         *self.classifier.get(&record.get_class()).unwrap()
     }
 
-    pub fn get_class_from_f64(&self, class_val: f64) -> U {
+    pub fn get_class_from_index(&self, class_val: usize) -> U {
         for (class, val) in &self.classifier {
             if class_val == *val {
                 return class.clone();
@@ -350,7 +355,14 @@ impl<T, U> Database<T, U>
     pub fn predict_nn(&mut self, record: &T) -> U {
         let pred = self.net.run(&record.values_f64());
         println!("{:?}", pred);
-        self.get_class_from_f64(pred[0].round())
+        let mut indx = 0;
+
+        for i in 1..pred.len() {
+            if pred[indx] < pred[i] {
+                indx = i;
+            }
+        }
+        self.get_class_from_index(indx)
     }
 
     pub fn predict_svm(&self, record: &T) -> U {
@@ -423,12 +435,15 @@ impl<T, U> Database<T, U>
             let mut count = 0;
 
             if let NeuralNetwork = training {
-                db.classify_as_f64();
+                db.classify();
                 let mut values: Vec<(Vec<f64>, Vec<f64>)> = Vec::new();
-
                 for rcrd in db.data.iter() {
-                    values.push((rcrd.values_f64(), vec![db.get_class_as_f64(rcrd)]));
+                    let mut class = vec![0.0; 9];
+                    // println!("Here!: {}", db.get_class_index(rcrd));
+                    class[db.get_class_index(rcrd)] = 1.0;
+                    values.push((rcrd.values_f64(), class));
                 }
+                // println!("Exited");
 
                 db.net.train(&values)
                       .halt_condition( HaltCondition::Epochs(100000) )
