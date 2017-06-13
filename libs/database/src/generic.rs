@@ -315,12 +315,12 @@ impl<T, U> Database<T, U>
         let mut counts: HashMap<U, usize> = HashMap::new();
         for i in 0..k {
             let counter = counts
-                .entry(self.data[self.nearest_neighbors(&record, euclidian_dist)[i]].get_class())
+                .entry(self.data[self.nearest_neighbors(&record, pearson_coef)[i]].get_class())
                 .or_insert(0);
             *counter += 1;
         }
 
-        let mut p_class = self.data[self.nearest_neighbors(&record, euclidian_dist)[0]].get_class();
+        let mut p_class = self.data[self.nearest_neighbors(&record, pearson_coef)[0]].get_class();
         let mut gtr_count = 1;
 
         for (class, count) in &counts {
