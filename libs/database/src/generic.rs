@@ -460,9 +460,9 @@ impl<T, U> Database<T, U>
                 db.net
                     .train(&values)
                     .halt_condition(HaltCondition::Epochs(100000))
-                    .log_interval(Some(5000))
+                    .log_interval(Some(1000))
                     .momentum(0.1)
-                    .rate(9.0)
+                    .rate(0.3)
                     .go();
             }
 
@@ -503,6 +503,8 @@ impl<T, U> Database<T, U>
 
                 count += 1;
             }
+
+            
 
             println!("\nTestings for: {}\n\
                       Accuracy: {}%\n\
