@@ -11,7 +11,7 @@ use rustc_serialize::{Decodable, Encodable};
 use std::marker::PhantomData;
 use std::hash::Hash;
 use rand::{thread_rng, Rng};
-use distance::{manhattan_dist, cosine_dist, euclidian_dist};
+use distance::*;
 use utilities::abs_standard_deviation;
 
 use rm::learning::svm::SVM;
